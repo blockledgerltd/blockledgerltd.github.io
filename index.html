@@ -1,287 +1,744 @@
-<!doctype html>
-<html class="no-js" lang="">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>NovaCoin | Website</title>
-    <meta name="description" content="">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="img/NVCx32.png" sizes="32x32" />
-    <meta name="google-site-verification" content="zArvQDJZsWgblxuLJdA0Jl4HNFhvmOP9SCIguXjYuho" />
-    <link rel="stylesheet" href="css/normalize.min.css">
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/jquery.fancybox.css">
-    <link rel="stylesheet" href="css/flexslider.css">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/queries.css">
-    <link rel="stylesheet" href="css/etline-font.css">
-    <link rel="stylesheet" href="bower_components/animate.css/animate.min.css">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
-    <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
-    <script async src="//www.googletagmanager.com/gtag/js?id=UA-102031002-2"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments)};
-          gtag('js', new Date());
-
-          gtag('config', 'UA-102031002-2');
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVACOIN [NVC] — Hybrid PoW/PoS · Terminal</title>
+    <style>
+        :root {
+            --text: #c8c8c8;
+            --text-dim: #666;
+            --text-bright: #e0e0e0;
+            --accent: #ff9610;
+            --accent-dim: #b86b00;
+            --accent-glow: 0 0 8px rgba(255, 150, 16, 0.45);
+            --error: #ff4444;
+            --bg: #080808;
+            --surface: #111;
+            --border: #444;
+            --border-light: #555;
+            --pixel-color: var(--accent);
+            --pixel-size: 4px;
+            --font-mono: 'Courier New', 'Consolas', 'Monaco', 'Lucida Console', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: #050505;
+            color: var(--text);
+            font-family: var(--font-mono);
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: crosshair;
+            -webkit-font-smoothing: none;
+            text-rendering: optimizeSpeed;
+            image-rendering: pixelated;
+            position: relative;
+        }
+        #matrix-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none; opacity: 0.18;
+        }
+        .crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 999; pointer-events: none;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+        }
+        .crt-overlay::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.5) 100%);
+            pointer-events: none;
+        }
+        @keyframes crt-flicker { 0%,99.5%,100%{opacity:1} 99.6%{opacity:0.85} 99.7%{opacity:1} 99.8%{opacity:0.7} }
+        .crt-overlay { animation: crt-flicker 8s infinite; }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 998; pointer-events: none; opacity: 0.015;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 150px 150px;
+        }
+        .main-wrapper {
+            position: relative; z-index: 10; max-width: 1100px; margin: 0 auto;
+            padding: 16px; display: flex; flex-direction: column; gap: 20px;
+            min-height: 100vh; padding-top: 20px;
+        }
+        .pixel-frame {
+            position: relative; border: 2px solid var(--border); background: var(--surface);
+            box-shadow: inset 0 0 18px rgba(255,255,255,0.015), 0 0 6px rgba(255,150,16,0.1);
+            image-rendering: pixelated;
+        }
+        .pixel-corner {
+            position: absolute; width: var(--pixel-size); height: var(--pixel-size);
+            background: var(--pixel-color); z-index: 5; pointer-events: none;
+            image-rendering: pixelated;
+        }
+        .pixel-corner.tl { top:-2px; left:-2px; box-shadow: 4px 0 0 var(--pixel-color),8px 0 0 var(--pixel-color),12px 0 0 var(--pixel-color),0 4px 0 var(--pixel-color),4px 4px 0 var(--pixel-color),8px 4px 0 var(--pixel-color),0 8px 0 var(--pixel-color),4px 8px 0 var(--pixel-color),0 12px 0 var(--pixel-color); }
+        .pixel-corner.tr { top:-2px; right:-2px; box-shadow: -4px 0 0 var(--pixel-color),-8px 0 0 var(--pixel-color),-12px 0 0 var(--pixel-color),0 4px 0 var(--pixel-color),-4px 4px 0 var(--pixel-color),-8px 4px 0 var(--pixel-color),0 8px 0 var(--pixel-color),-4px 8px 0 var(--pixel-color),0 12px 0 var(--pixel-color); }
+        .pixel-corner.bl { bottom:-2px; left:-2px; box-shadow: 4px 0 0 var(--pixel-color),8px 0 0 var(--pixel-color),12px 0 0 var(--pixel-color),0 -4px 0 var(--pixel-color),4px -4px 0 var(--pixel-color),8px -4px 0 var(--pixel-color),0 -8px 0 var(--pixel-color),4px -8px 0 var(--pixel-color),0 -12px 0 var(--pixel-color); }
+        .pixel-corner.br { bottom:-2px; right:-2px; box-shadow: -4px 0 0 var(--pixel-color),-8px 0 0 var(--pixel-color),-12px 0 0 var(--pixel-color),0 -4px 0 var(--pixel-color),-4px -4px 0 var(--pixel-color),-8px -4px 0 var(--pixel-color),0 -8px 0 var(--pixel-color),-4px -8px 0 var(--pixel-color),0 -12px 0 var(--pixel-color); }
+        .pixel-corner-inner {
+            position: absolute; width: 3px; height: 3px; background: var(--pixel-color);
+            z-index: 4; pointer-events: none; image-rendering: pixelated;
+        }
+        .pixel-corner-inner.tl { top:5px; left:5px; box-shadow: 3px 0 0 var(--pixel-color),0 3px 0 var(--pixel-color),3px 3px 0 var(--pixel-color); }
+        .pixel-corner-inner.tr { top:5px; right:5px; box-shadow: -3px 0 0 var(--pixel-color),0 3px 0 var(--pixel-color),-3px 3px 0 var(--pixel-color); }
+        .pixel-corner-inner.bl { bottom:5px; left:5px; box-shadow: 3px 0 0 var(--pixel-color),0 -3px 0 var(--pixel-color),3px -3px 0 var(--pixel-color); }
+        .pixel-corner-inner.br { bottom:5px; right:5px; box-shadow: -3px 0 0 var(--pixel-color),0 -3px 0 var(--pixel-color),-3px -3px 0 var(--pixel-color); }
+        .terminal-window {
+            position: relative; padding: 18px 20px; border: 2px solid var(--border);
+            background: rgba(0,0,0,0.8);
+            box-shadow: inset 0 0 25px rgba(255,255,255,0.01), 0 0 0 1px rgba(255,150,16,0.12);
+            image-rendering: pixelated;
+        }
+        .terminal-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+            padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.15);
+            font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim);
+        }
+        .terminal-header .dot {
+            width: 7px; height: 7px; background: var(--accent); display: inline-block;
+            image-rendering: pixelated; box-shadow: 0 0 5px var(--accent);
+        }
+        .terminal-header .dot.grey { background: #777; box-shadow: 0 0 3px #777; }
+        .terminal-header .dot.red { background: var(--error); box-shadow: 0 0 5px var(--error); }
+        .terminal-header .title-text {
+            flex: 1; text-align: center; color: var(--text-bright);
+            text-shadow: 0 0 5px rgba(255,150,16,0.3);
+        }
+        .logo-grid {
+            display: grid; grid-template-columns: repeat(23, 1fr); grid-template-rows: repeat(23, 1fr);
+            width: min(184px, 48vw); height: min(184px, 48vw); gap: 0; margin: 0 auto 16px;
+            image-rendering: pixelated;
+        }
+        .logo-cell { width: 100%; height: 100%; background: transparent; }
+        .logo-cell.active { background: #ff9610; }
+        .hero-ascii {
+            font-size: clamp(0.45rem, 1.5vw, 0.7rem); line-height: 1.1; color: var(--text-bright);
+            text-shadow: 0 0 6px rgba(255,150,16,0.4); white-space: pre; display: inline-block;
+            image-rendering: pixelated; animation: ascii-pulse 3s ease-in-out infinite, glitch-shift 6s infinite;
+        }
+        @keyframes ascii-pulse { 0%,100%{text-shadow:0 0 6px rgba(255,150,16,0.4)} 50%{text-shadow:0 0 14px rgba(255,150,16,0.7),0 0 30px rgba(255,150,16,0.3)} }
+        @keyframes glitch-shift { 0%,93%,100%{transform:translate(0)} 94%{transform:translate(-3px,1px)} 95%{transform:translate(3px,-1px)} 96%{transform:translate(0)} 97%{transform:translate(-1px,-2px)} 98%{transform:translate(2px,1px)} 99%{transform:translate(0)} }
+        .blink-cursor {
+            display: inline-block; width: 9px; height: 16px; background: #c8c8c8;
+            animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px;
+            image-rendering: pixelated; box-shadow: 0 0 6px rgba(255,255,255,0.4);
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .hero-subtitle {
+            color: var(--text-dim); font-size: 0.78rem; letter-spacing: 2px;
+            margin-top: 6px; text-transform: uppercase;
+        }
+        .hero-subtitle .hl { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
+        .section-title {
+            font-size: 1.1rem; font-weight: bold; letter-spacing: 3px; text-transform: uppercase;
+            color: var(--text-bright); text-align: center; margin-bottom: 20px;
+            text-shadow: 0 0 6px rgba(255,150,16,0.3);
+        }
+        .section-title::after {
+            content: ''; display: block; width: 60px; height: 3px; background: var(--accent);
+            margin: 8px auto 0; image-rendering: pixelated;
+        }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .card { padding: 16px; text-align: center; position: relative; }
+        .card-title { font-size: 0.8rem; font-weight: bold; letter-spacing: 1px; color: var(--text-bright); margin-bottom: 6px; text-transform: uppercase; }
+        .card-desc { font-size: 0.68rem; color: var(--text-dim); line-height: 1.4; letter-spacing: 0.5px; }
+        .spec-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+        .spec-item { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; letter-spacing: 1px; }
+        .spec-label { color: var(--text-dim); text-transform: uppercase; font-size: 0.6rem; }
+        .spec-value { color: var(--accent); font-weight: bold; text-shadow: 0 0 4px rgba(255,150,16,0.3); }
+        .contract-box { padding: 14px; margin-bottom: 8px; }
+        .contract-label { font-size: 0.65rem; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px; }
+        .contract-addr {
+            display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.4);
+            padding: 8px 12px; border: 1px solid #333; font-size: 0.65rem; color: var(--text);
+            word-break: break-all; letter-spacing: 0.5px; image-rendering: pixelated;
+        }
+        .copy-btn {
+            background: var(--accent); border: none; color: #000; padding: 5px 12px;
+            cursor: pointer; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 1px;
+            text-transform: uppercase; image-rendering: pixelated; white-space: nowrap;
+            transition: all 0.1s step-end;
+        }
+        .copy-btn:hover { background: #ffb840; }
+        .copy-btn.copied { background: #666; color: #fff; }
+        .pixel-btn {
+            display: inline-block; padding: 9px 18px; font-family: var(--font-mono);
+            font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+            background: transparent; color: var(--accent); border: 2px solid var(--accent);
+            cursor: pointer; image-rendering: pixelated; text-shadow: 0 0 5px rgba(255,150,16,0.4);
+            box-shadow: 0 0 0 1px rgba(255,150,16,0.2), inset 0 0 15px rgba(255,150,16,0.03);
+            transition: all 0.1s step-end; text-decoration: none;
+        }
+        .pixel-btn:hover { background: var(--accent); color: #000; text-shadow: none; box-shadow: 0 0 16px rgba(255,150,16,0.6), 0 0 30px rgba(255,150,16,0.2); }
+        .pixel-btn.grey { color: var(--text-dim); border-color: #555; text-shadow: none; box-shadow: none; }
+        .pixel-btn.grey:hover { background: #333; color: var(--text-bright); border-color: #777; }
+        .pixel-btn.sm { padding: 5px 10px; font-size: 0.6rem; letter-spacing: 1px; border-width: 1px; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+        .nav-terminal {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+            gap: 8px; padding: 10px 16px; font-size: 0.65rem; letter-spacing: 2px;
+            text-transform: uppercase; position: sticky; top: 8px; z-index: 100;
+            background: rgba(0,0,0,0.9);
+        }
+        .nav-links { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .nav-links a {
+            color: var(--text-dim); text-decoration: none; letter-spacing: 2px;
+            transition: color 0.1s step-end; font-size: 0.6rem;
+        }
+        .nav-links a:hover { color: var(--accent); text-shadow: 0 0 6px rgba(255,150,16,0.5); }
+        .nav-links a::before { content: '['; color: #555; }
+        .nav-links a::after { content: ']'; color: #555; }
+        .nav-links a:hover::before, .nav-links a:hover::after { color: var(--accent); }
+        .nav-brand {
+            color: var(--accent); font-weight: bold; font-size: 0.75rem; letter-spacing: 3px;
+            text-shadow: 0 0 8px rgba(255,150,16,0.4); text-decoration: none; cursor: pointer;
+        }
+        .nav-status { font-size: 0.55rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px; }
+        .status-dot {
+            width: 6px; height: 6px; background: var(--accent); image-rendering: pixelated;
+            box-shadow: 0 0 6px var(--accent); animation: status-pulse 2s ease-in-out infinite;
+        }
+        @keyframes status-pulse { 0%,100%{box-shadow:0 0 6px var(--accent)} 50%{box-shadow:0 0 14px var(--accent),0 0 20px rgba(255,150,16,0.5)} }
+        .category-tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+        .cat-tab {
+            padding: 6px 16px; border: 2px solid #555; background: transparent; color: var(--text-dim);
+            font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 1px; cursor: pointer;
+            text-transform: uppercase; image-rendering: pixelated; transition: all 0.1s step-end;
+        }
+        .cat-tab:hover { border-color: var(--accent); color: var(--accent); }
+        .cat-tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
+        .wallet-card { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+        .wallet-header { display: flex; align-items: center; gap: 10px; }
+        .wallet-name { font-size: 0.7rem; font-weight: bold; color: var(--text-bright); letter-spacing: 1px; }
+        .wallet-desc { font-size: 0.62rem; color: var(--text-dim); }
+        .wallet-platforms { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+        .platform-tag {
+            background: rgba(255,150,16,0.1); border: 1px solid #444; padding: 3px 8px;
+            font-size: 0.55rem; letter-spacing: 1px; color: var(--text-dim);
+        }
+        .dl-btn {
+            display: inline-block; padding: 4px 10px; border: 1px solid var(--accent);
+            color: var(--accent); text-decoration: none; font-size: 0.6rem; letter-spacing: 1px;
+            image-rendering: pixelated; transition: all 0.1s step-end;
+        }
+        .dl-btn:hover { background: var(--accent); color: #000; }
+        .wallet-features { list-style: none; padding: 0; font-size: 0.58rem; color: var(--text-dim); }
+        .wallet-features li::before { content: '> '; color: var(--accent); }
+        .exchange-card {
+            padding: 14px; text-align: center; text-decoration: none; color: var(--text);
+            display: flex; flex-direction: column; gap: 8px; transition: all 0.1s step-end;
+        }
+        .exchange-card:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(255,150,16,0.2); }
+        .exchange-name { font-size: 0.75rem; font-weight: bold; letter-spacing: 2px; color: var(--text-bright); }
+        .pair-link {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(0,0,0,0.3); border: 1px solid #333; padding: 8px 12px;
+            text-decoration: none; color: var(--text); font-size: 0.6rem; letter-spacing: 1px;
+            transition: all 0.1s step-end;
+        }
+        .pair-link:hover { border-color: var(--accent); background: rgba(255,150,16,0.05); }
+        .pair-arrow { color: var(--accent); }
+        .social-links { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .social-link {
+            width: 36px; height: 36px; border: 2px solid #555; display: flex;
+            align-items: center; justify-content: center; text-decoration: none;
+            transition: all 0.1s step-end; image-rendering: pixelated;
+        }
+        .social-link:hover { border-color: var(--accent); box-shadow: 0 0 10px rgba(255,150,16,0.4); }
+        .social-link svg { width: 18px; height: 18px; fill: #888; }
+        .social-link:hover svg { fill: var(--accent); }
+        .footer-section { text-align: center; padding: 20px; font-size: 0.6rem; letter-spacing: 1px; color: var(--text-dim); }
+        .footer-section a { color: var(--accent); text-decoration: none; }
+        .footer-section a:hover { text-shadow: 0 0 6px var(--accent); }
+        .command-section { padding: 14px 16px; }
+        .command-prompt { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; letter-spacing: 1px; }
+        .prompt-symbol { color: var(--text-bright); font-weight: bold; }
+        .prompt-path { color: var(--accent); }
+        #command-input {
+            background: transparent; border: none; color: var(--text-bright);
+            font-family: var(--font-mono); font-size: 0.78rem; flex: 1; outline: none;
+            caret-color: var(--accent); letter-spacing: 1px;
+        }
+        #command-input::placeholder { color: rgba(200,200,200,0.15); }
+        .command-output {
+            margin-top: 8px; font-size: 0.68rem; color: var(--text-dim); min-height: 16px;
+            white-space: pre-wrap; word-break: break-all; letter-spacing: 1px;
+        }
+        .command-output .err { color: var(--error); }
+        .command-output .ok { color: var(--text-bright); }
+        .tag {
+            display: inline-block; padding: 2px 7px; border: 1px solid #555;
+            font-size: 0.55rem; letter-spacing: 1px; color: var(--text-dim);
+            image-rendering: pixelated; margin: 2px;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; border: 1px solid #333; }
+        ::-webkit-scrollbar-thumb { background: #555; border: 1px solid #666; image-rendering: pixelated; }
+        @media (max-width: 768px) {
+            .main-wrapper { padding: 8px; gap: 12px; padding-top: 12px; }
+            .terminal-window { padding: 12px 10px; border-width: 1px; }
+            .nav-terminal { flex-direction: column; text-align: center; gap: 6px; }
+            .nav-links { justify-content: center; gap: 8px; }
+            .pixel-corner { width: 3px; height: 3px; }
+            .pixel-corner.tl { box-shadow: 3px 0 0 var(--pixel-color),6px 0 0 var(--pixel-color),0 3px 0 var(--pixel-color),3px 3px 0 var(--pixel-color),0 6px 0 var(--pixel-color); }
+            .pixel-corner.tr { box-shadow: -3px 0 0 var(--pixel-color),-6px 0 0 var(--pixel-color),0 3px 0 var(--pixel-color),-3px 3px 0 var(--pixel-color),0 6px 0 var(--pixel-color); }
+            .pixel-corner.bl { box-shadow: 3px 0 0 var(--pixel-color),6px 0 0 var(--pixel-color),0 -3px 0 var(--pixel-color),3px -3px 0 var(--pixel-color),0 -6px 0 var(--pixel-color); }
+            .pixel-corner.br { box-shadow: -3px 0 0 var(--pixel-color),-6px 0 0 var(--pixel-color),0 -3px 0 var(--pixel-color),-3px -3px 0 var(--pixel-color),0 -6px 0 var(--pixel-color); }
+        }
+    </style>
 </head>
+<body>
+    <canvas id="matrix-canvas"></canvas>
+    <div class="crt-overlay"></div>
+    <div class="noise-overlay"></div>
 
-<body id="top">
-    <section class="hero">
-        <section class="navigation">
-            <header style="border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding: 35px 0px;">
-                <div class="header-content-inner">
-                    <div class="logo">
-                        <a href="#">Home</a>
-                    </div>
-                    <div class="header-nav">
-                        <nav>
-                            <ul class="primary-nav">
-                                <li><a href="#features">Features</a></li>
-								<li><a href="#CoinSpecs">Coin Specs</a></li>
-                                <li><a href="#getStarted">Get Started</a></li>
-                                <li><a href="#moreinfo">More Info</a></li>
-                                <li><a href="/Wallets">Wallets</a></li>
-                                <li><a href="/Exchanges">Exchanges</a></li>
-                                <li><a href="/Services">Services</a></li>
-                            </ul>
-                        </nav>
-                    </div>
-                </div>
-            </header>
+    <div class="main-wrapper">
+        <!-- ===== NAV ===== -->
+        <nav class="terminal-window nav-terminal pixel-frame" id="nav">
+            <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+            <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+            <a class="nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">[NVC]</a>
+            <div class="nav-links">
+                <a href="#home">home</a>
+                <a href="#features">features</a>
+                <a href="#specs">specs</a>
+                <a href="#wallets">wallets</a>
+                <a href="#exchanges">exchanges</a>
+                <a href="#explorers">explorers</a>
+            </div>
+            <div class="nav-status"><span class="status-dot"></span> NODE:ONLINE </div>
+        </nav>
+
+        <!-- ===== HERO ===== -->
+        <section class="terminal-window pixel-frame" id="home" style="text-align:center;padding:24px 20px;">
+            <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+            <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+            <span class="pixel-corner-inner tl"></span><span class="pixel-corner-inner tr"></span>
+            <span class="pixel-corner-inner bl"></span><span class="pixel-corner-inner br"></span>
+            <div class="terminal-header">
+                <span class="dot"></span><span class="dot grey"></span><span class="dot red"></span>
+                <span class="title-text">ROOT@NOVACOIN:~$ ./launch.sh</span>
+            </div>
+            <div id="logo-container" class="logo-grid"></div>
+            <pre class="hero-ascii">
+    ███╗   ██╗ ██████╗ ██╗   ██╗ █████╗  ██████╗ ██████╗ ██╗███╗   ██╗
+    ████╗  ██║██╔═══██╗██║   ██║██╔══██╗██╔════╝██╔═══██╗██║████╗  ██║
+    ██╔██╗ ██║██║   ██║██║   ██║███████║██║     ██║   ██║██║██╔██╗ ██║
+    ██║╚██╗██║██║   ██║╚██╗ ██╔╝██╔══██║██║     ██║   ██║██║██║╚██╗██║
+    ██║ ╚████║╚██████╔╝ ╚████╔╝ ██║  ██║╚██████╗╚██████╔╝██║██║ ╚████║
+    ╚═╝  ╚═══╝ ╚═════╝   ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝
+</pre>
+            <p class="hero-subtitle">
+                <span class="hl">NOVACOIN [NVC]</span> :: HYBRID PoW/PoS :: NO MASTERS
+                <span class="blink-cursor"></span>
+            </p>
+            <p style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;letter-spacing:1px;">
+                First hybrid consensus coin. Private tx by default. Scrypt PoW + PoS staking. No VCs. No premine. Raw code.
+            </p>
+            <div class="btn-row">
+                <a href="#wallets" class="pixel-btn">▸ DOWNLOAD WALLET</a>
+                <a href="#features" class="pixel-btn grey">▸ LEARN MORE</a>
+            </div>
         </section>
-        <div class="container">
-            <div class="row">
-			    <div class="hero-content text-center">
-			            <h2 class="page-scroll" href=""></h2>
-                    <div class="col-md-10 col-md-offset-1" style="top: 300px;">
-                        <a href="/Wallets" class="btn btn-fill btn-large">Our Wallets</a>
-                        <a href="/Exchanges" target="_blank" class="btn btn-fill btn-large btn-margin-right">Get Nova</a>
-                    </div>
+
+        <!-- ===== COMMAND CONSOLE ===== -->
+        <section class="terminal-window command-section pixel-frame" id="console">
+            <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+            <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+            <div class="terminal-header">
+                <span class="dot red"></span><span class="dot"></span><span class="dot grey"></span>
+                <span class="title-text">INTERACTIVE CONSOLE // type 'help'</span>
+            </div>
+            <div class="command-prompt">
+                <span class="prompt-symbol">nvcoid@node:~$</span>
+                <span class="prompt-path">/chain/nvc/</span>
+                <input type="text" id="command-input" placeholder="type command..." autofocus autocomplete="off" spellcheck="false">
+                <span class="blink-cursor" style="width:7px;height:12px;"></span>
+            </div>
+            <div class="command-output" id="command-output">
+                <span style="color:#555;">// Awaiting input. Commands: help, specs, about, clear, matrix, devs, price</span>
+            </div>
+        </section>
+
+        <!-- ===== FEATURES ===== -->
+        <section id="features">
+            <h2 class="section-title">[ FEATURES ]</h2>
+            <div class="grid-2">
+                <div class="terminal-window card pixel-frame">
+                    <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span><span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+                    <div class="card-title">Hybrid Consensus</div>
+                    <div class="card-desc">First coin to fuse Scrypt PoW with PoS. Instant near-zero cost payments. Energy efficient by design. No single point of failure.</div>
+                </div>
+                <div class="terminal-window card pixel-frame">
+                    <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span><span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+                    <div class="card-title">Private Transactions</div>
+                    <div class="card-desc">Addresses starting with '5' are private. No mixing services. No master nodes. Just baked-in privacy on a decentralized P2P network.</div>
+                </div>
+                <div class="terminal-window card pixel-frame">
+                    <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span><span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+                    <div class="card-title">Unique Emission</div>
+                    <div class="card-desc">Lower block rewards than BTC. Designed scarcity. Stock-to-flow engineered for long-term value. No inflationary bullshit.</div>
                 </div>
             </div>
-        </div>
-    </section>
-    <section class="intro section-padding" id="features">
-        <div class="container">
-            <div class="row bpsig vishid">
-                <div class="col-md-4 intro-feature">
-                    <div class="intro-icon">
-                        <span data-icon="&#xe016;" class="icon"></span>
-                    </div>
-                    <div class="intro-content">
-                        <h5><b>NOVACOIN </b></h5>
-                        <p><b>It is the first cryptocurrency based on hybrid Proof-of-Work (Scrypt)/Proof-of-Stake block generation methods that enable instant, near-zero cost payments and contribute to the coin's energy efficiency. </b></p>
-                    </div>
-                </div>
-                <div class="col-md-4 intro-feature">
-                    <div class="intro-icon">
-                        <span data-icon="&#xe020;" class="icon"></span>
-                    </div>
-                    <div class="intro-content">
-                        <h5><b>PRIVACY AND SECURITY </b></h5>
-                        <p><b>NovaCoin is an open-source decentralized global payment network, it supports private transactions without the need to use master nodes or mixing services for the address starts from 5. </b></p>
-                    </div>
-                </div>
-                <div class="col-md-4 intro-feature">
-                    <div class="intro-icon">
-                        <span data-icon="&#xe01f;" class="icon"></span>
-                    </div>
-                    <div class="intro-content last">
-                        <h5><b>SPEED AND EMISSION </b></h5>
-                        <p><b>Despite a more frequent block generation than Bitcoin, NovaCoin uses a different emission model with lower rewards. This is designed to ensure scarcity and enhance the stock-to-flow value of the coin. </b></p>
-                    </div>
+        </section>
+
+        <!-- ===== SPECS ===== -->
+        <section id="specs">
+            <h2 class="section-title">[ TECHNICAL SPECIFICATIONS ]</h2>
+            <div class="spec-row">
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Ticker</span><span class="spec-value">NVC</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Architecture</span><span class="spec-value">UTXO</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Consensus</span><span class="spec-value">Hybrid PoW/PoS</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Tx Fee</span><span class="spec-value">0.001 NVC/kB</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Reward Unlocking Confirmations</span><span class="spec-value">520</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Max PoS Reward</span><span class="spec-value">10 NVC/block</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Min Stake Age</span><span class="spec-value">30 days</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">Max Stake Age</span><span class="spec-value">90 days</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">PoS Interval</span><span class="spec-value">10 minutes</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">PoW Interval</span><span class="spec-value">30 minutes</span></div>
+                <div class="terminal-window spec-item pixel-frame"><span class="pixel-corner tl"></span><span class="pixel-corner br"></span><span class="spec-label">PoW Algorithm</span><span class="spec-value">Scrypt</span></div>
+            </div>
+        </section>
+
+        <!-- ===== CONTRACTS ===== -->
+        <section id="contracts">
+            <h2 class="section-title">[ BEP-20 BRIDGE ]</h2>
+            <div class="terminal-window contract-box pixel-frame">
+                <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span><span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+                <div class="contract-label">BEP-20 Contract Address</div>
+                <div class="contract-addr">
+                    <span>0xbf84720097de111a80f46f9d077643967042841a</span>
+                    <button class="copy-btn" onclick="copyAddr('0xbf84720097de111a80f46f9d077643967042841a',this)">COPY</button>
                 </div>
             </div>
-        </div>
-    </section>
-    <section class="features section-padding wefuture" id="CoinSpecs">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-5 col-md-offset-7">
-                    <div class="feature-list">
-                      <div class="vishid fc">
-                        <h3>NovaCoin Specifications </h3>
-                      </div>
-                        <ul class="features-stack">
-                            <li class="feature-item vishid fc1">
-                                <div class="feature-content">
-                                    <a href="https://github.com/novacoin-project/novacoin" target="_blank">
-                                    <h5><u>Source Code</u></h5>
-                                    </a>
-									<p>Ticker: <b>NVC</b></p>
-                                    <p>Transaction confirmation method: <b>PoS + PoW</b></p>
-									<p>Transaction fee: <b>0.001</b></p>
-									<p>Number of transaction confirmation: <b>6</b></p>
-									<p>Number of block confirmation: <b>520</b></p>									
-                                    <p>Max PoS reward: <b>10 coins</b></p>
-                                    <p>Min/max stake age: <b>30d/90d</b></p>									
-                                    <p>Target spacing: <b>10 min PoS / 30 min PoW</b></p>
-									<p>PoW algo type: <b>Scrypt</b></p>
-			             			<p>Max PoW reward: <b>100 coin</b></p>
-									<p>JSON-RPC Port: <b>8344</b></p>
-									<p>P2P Port: <b>7777</b></p>
-									<br>
-                                    <p>NVC BEP-20 Contract Address:</p><a href="https://bscscan.com/token/0xbf84720097de111a80f46f9d077643967042841a" target="_blank">0xbf84720097de111a80f46f9d077643967042841a</a>
-                                    <p>NVC BEP-20 Safe MultiSig Address:</p><a href="https://app.safe.global/balances?safe=bnb:0xB1C2F7Abb355151BAdF47655390dD259Ddf1bf3d" target="_blank">0xB1C2F7Abb355151BAdF47655390dD259Ddf1bf3d</a>
-                                    <p>NVC UTXO Proof-of-Funds Address:</p><a href="https://explorer.novaco.in/address/4SWAPxopn67fmorSVcJEjhxUJ7yNgAD3Sz" target="_blank">4SWAPxopn67fmorSVcJEjhxUJ7yNgAD3Sz</a>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
+            <div class="terminal-window contract-box pixel-frame">
+                <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span><span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+                <div class="contract-label">BEP-20 Bridge MultiSig</div>
+                <div class="contract-addr">
+                    <span>0xB1C2F7Abb355151BAdF47655390dD259Ddf1bf3d</span>
+                    <button class="copy-btn" onclick="copyAddr('0xB1C2F7Abb355151BAdF47655390dD259Ddf1bf3d',this)">COPY</button>
                 </div>
             </div>
-        </div>
-        <div class="device-showcase">
-            <div class="devices">
-                <div class="ipad-wrap wp1"><img src="img/NVCearth.png" class="earthimg"></div>
-                <div class="iphone-wrap wp2"></div>
-            </div>
-        </div>
-    </section>
-    <section class="features-extra section-padding" id="getStarted">
-        <div class="container vishid twp3">
-            <div class="row">
-                <div class="col-md-5">
-                        <h3><b>Want to get started with NovaCoin?</b></h3>
-                        <p><b>Getting started is really easy, you'll just have to download one of the wallets and transfer your coins to the wallet. For tech details about NovaCoin, check our Wiki.</b></p>
-                        <a href="https://wiki.novaco.in/" target="_blank" class="btn btn-ghost btn-accent btn-small ow">NovaCoin Wiki</a>
-                        <br>						
-                        <h3><b>Don't have any coins yet?</b></h3>
-                        <p><b>Well that's no problem. If you have a mining rig you can mine some coins or just go to the exchange and buy your first NovaCoin.</b></p>
-                        <a href="/Exchanges" class="btn btn-ghost btn-accent btn-small bs">Buy NovaCoin</a>
+            <div class="terminal-window contract-box pixel-frame">
+                <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span><span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+                <div class="contract-label">UTXO Proof-of-Funds MultiSig</div>
+                <div class="contract-addr">
+                    <span>9EuEfZLL5tnagtMgFHtaEv2dGtZnE7cAZU</span>
+                    <button class="copy-btn" onclick="copyAddr('9EuEfZLL5tnagtMgFHtaEv2dGtZnE7cAZU',this)">COPY</button>
                 </div>
             </div>
-        </div>
-        <div class="macbook-wrap wp3"></div>
-        <div class="responsive-feature-img"><img src="img/NVCwallet.png" alt="responsive devices"></div>
-    </section>
-    <section class="hero-strip section-padding" id="moreinfo">
-        <div class="container spa vishid">
-            <div class="col-md-12 text-center">
-                <div class="row">
-                    <div class="col-md-3 col-sm-6 leftcol">
-                        <h3>Charts and Graphs:</h3>
-                        <a href="https://coinmarketcap.com/currencies/novacoin/" target="_blank">
-                            <h5><u>CoinMarketCap</u></h5>
-                        </a>
-                        <a href="https://www.coingecko.com/coins/novacoin/" target="_blank">
-                            <h5><u>Coingecko</u></h5>
-                        </a>
-                        <a href="https://coinpaprika.com/coin/nvc-novacoin/" target="_blank">
-                            <h5><u>CoinPaprika</u></h5>
-                        </a>
-                        <a href="https://coincheckup.com/coins/novacoin" target="_blank">
-                            <h5><u>CoinCheckup</u></h5>
-                        </a>
-                        <a href="https://www.coinlore.com/ru/coin/novacoin" target="_blank">
-                            <h5><u>CoinLore</u></h5>
-                        </a>
-                        <a href="https://www.bitdegree.org/cryptocurrency-prices/novacoin-nvc-price" target="_blank">
-                            <h5><u>BitDegree</u></h5>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-sm-6 leftcol">
-                        <h3>Mining:</h3>
-                        <a href="https://miningpoolstats.stream/novacoin" target="_blank">
-                            <h5><u>PoW Pools</u></h5>
-                        </a>
-                        <a href="https://svcpool.io/" target="_blank">
-                            <h5><u>PoS Pool</u></h5>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-sm-6 leftcol">
-                        <h3>Block Explorers:</h3>
-                        <a href="https://chainz.cryptoid.info/nvc/" target="_blank">
-                            <h5><u>chainz.cryptoid.info</u></h5>
-                        </a>
-                        <a href="https://explorer.nova-coin.org/" target="_blank">
-                            <h5><u>explorer.nova-coin.org</u></h5>
-                        </a>
-                        <a href="https://explorer.novaco.in/" target="_blank">
-                            <h5><u>explorer.novaco.in</u></h5>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-sm-6 leftcol">
-                        <h3>Sites:</h3>
-                        <a href="https://novacoin.one/" target="_blank">
-                            <h5><u>novacoin.one</u></h5>
-                        </a>
-                        <a href="https://novaco.in/" target="_blank">
-                            <h5><u>novaco.in</u></h5>
-                        </a>						
-                    </div>
-                </div>
+        </section>
+
+        <!-- ===== GETTING STARTED ===== -->
+        <section id="start" style="text-align:center;">
+            <h2 class="section-title">[ GETTING STARTED ]</h2>
+            <div class="terminal-window pixel-frame" style="max-width:700px;margin:0 auto;padding:20px;">
+                <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span><span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+                <p style="font-size:0.7rem;color:var(--text-dim);letter-spacing:1px;line-height:1.6;">
+                    Download a wallet. Transfer your coins. Stake to earn. That's it.<br>
+                    For deep tech details, hit the Wiki.
+                </p>
+                <a href="https://github.com/novacoin-project/novacoin/wiki" target="_blank" class="pixel-btn" style="margin-top:12px;">▸ NOVACOIN WIKI</a>
             </div>
-        </div>
-    </section>
-    <footer>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-7">
-                    <div class="footer-links">
-                        <ul class="footer-group">
-                            <li><a href="#features">Features</a></li>
-                            <li><a href="#CoinSpecs">Coin Specs</a></li>
-							<li><a href="#getStarted">Get Started</a></li>
-                            <li><a href="/Wallets">Wallets</a></li>
-                            <li><a href="/Exchanges">Exchanges</a></li>
-                            <li><a href="/Services">Services</a></li>
-                        </ul>
-                          <p>Copyright © XXI NovaCoin Community<br>
-                    </div>
-                </div>
-                    <div class="social-share">
-  					<div>
-  						<a href="mailto:nova-coin@tuta.io">
-  							<span class="mail1"></span>
-  							<p class="icontext">Mail</p>
-  						</a>
-  					</div>
-  					<div>
-                        <a href="https://t.me/NovaCoin_EN" target="_blank">
-  							<span class="telegram1"></span>
-  							<p class="icontext">Telegram</p>
-  						</a>
-  					</div>
-  					<div>
-                        <a href="https://twitter.com/Novacoin_NVC/" target="_blank">
-  							<span class="twitter1"></span>
-  							<p class="icontext">Twitter</p>
-  						</a>
-  					</div>
-                    <div>
-                        <a href="https://www.youtube.com/@Novacoin_NVC" target="_blank">
-                            <span class="youtube1"></span>
-                            <p class="icontext">Youtube</p>
-                        </a>
-                    </div>
-  					<div>
-                        <a href="https://bitcointalk.org/index.php?topic=5189560.0" target="_blank">
-                            <span class="bitcointalk1"></span>
-                            <p class="icontext">Bitcointalk</p>
-                        </a>
-  					</div>
-  					<div>
-                        <a href="https://discord.gg/6juXnsSkGa" target="_blank">
-  							<span class="discord1"></span>
-  							<p class="icontext">Discord</p>
-  						</a>
-  					</div>
-                </div>
+        </section>
+
+        <!-- ===== WALLETS ===== -->
+        <section id="wallets">
+            <h2 class="section-title">[ DIGITAL WALLETS ]</h2>
+            <p style="text-align:center;font-size:0.65rem;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;">
+                ⚠ Keep your private keys safe. Not your keys, not your coins.
+            </p>
+            <div class="category-tabs" id="walletTabs">
+                <button class="cat-tab active" data-cat="desktop">Desktop</button>
+                <button class="cat-tab" data-cat="mobile">Mobile</button>
             </div>
-        </div>
-    </footer>
-    <script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
-    <script>window.jQuery || document.write('<script src="../js/vendor/jquery-1.11.2.min.js"><\/script>')</script><script src="../js/vendor/jquery-1.11.2.min.js"></script>
-    <script src="../bower_components/retina.js/dist/retina.js"></script>
-    <script src="../js/jquery.fancybox.pack.js"></script>
-    <script src="../js/vendor/bootstrap.min.js"></script>
-    <script src="../js/scripts.js"></script>
-    <script src="../js/jquery.flexslider-min.js"></script>
-    <script src="../bower_components/classie/classie.js"></script>
-    <script src="../bower_components/jquery-waypoints/lib/jquery.waypoints.min.js"></script>
+            <div class="grid-2" id="walletsGrid"></div>
+        </section>
+
+        <!-- ===== EXCHANGES ===== -->
+        <section id="exchanges">
+            <h2 class="section-title">[ TRADING EXCHANGES ]</h2>
+            <p style="text-align:center;font-size:0.65rem;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;">
+                Buy, sell, and trade NVC. Pick your poison.
+            </p>
+            <div class="grid-2" id="exchangesGrid"></div>
+        </section>
+
+        <!-- ===== MINING POOLS ===== -->
+        <section id="mining">
+            <h2 class="section-title">[ MINING POOLS ]</h2>
+            <div class="grid-2" id="miningGrid"></div>
+        </section>
+
+        <!-- ===== EXPLORERS ===== -->
+        <section id="explorers">
+            <h2 class="section-title">[ BLOCK EXPLORERS ]</h2>
+            <p style="text-align:center;font-size:0.65rem;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px;">
+                Inspect blocks, transactions, and addresses on the NovaCoin chain.
+            </p>
+            <div class="grid-3" id="explorersGrid"></div>
+        </section>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="terminal-window pixel-frame footer-section">
+            <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+            <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+            <p style="font-size:0.7rem;color:var(--text-bright);letter-spacing:2px;margin-bottom:10px;">FOLLOW THE SIGNAL</p>
+            <div class="social-links" id="socialLinks"></div>
+            <p style="margin-top:14px;font-size:0.55rem;color:#555;">
+                © MMXXVI NovaCoin Foundation. Designed by some fluffy creature.
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // ===== LOGO GRID =====
+        (function() {
+            const pattern = [
+                "00000000111111111111111","00000000111111111111111","00000000111111111111111",
+                "00000000000000000000000","00000000111111111111111","00000000111111111111111",
+                "00000000111111111111111","00000000000000000000000","11111111111111101111111",
+                "11111111111111101111111","11111111111111101111111","00000000000000000000000",
+                "01111111111111110111111","01111111111111110111111","01111111111111110111111",
+                "00000000000000000000000","00111111111111111011111","00111111111111111011111",
+                "00111111111111111011111","00000000000000000000000","11111111111111101111111",
+                "11111111111111101111111","11111111111111101111111"
+            ];
+            const c = document.getElementById('logo-container');
+            if (!c) return;
+            c.innerHTML = '';
+            for (let r = 0; r < 23; r++) {
+                const row = pattern[r];
+                for (let col = 0; col < 23; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'logo-cell';
+                    if (row[col] === '1') cell.classList.add('active');
+                    c.appendChild(cell);
+                }
+            }
+        })();
+
+        // ===== MATRIX RAIN =====
+        (function() {
+            const canvas = document.getElementById('matrix-canvas');
+            const ctx = canvas.getContext('2d');
+            let w, h, cols, drops;
+            const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-=[]{}|;:<>?/ｦｧｨｩｪｫｬｭｮｯｰ';
+            const fs = 12, spd = 30;
+            function resize() {
+                w = window.innerWidth; h = window.innerHeight;
+                canvas.width = w; canvas.height = h;
+                cols = Math.floor(w / fs);
+                drops = [];
+                for (let i = 0; i < cols; i++) drops[i] = Math.random() * -h / fs;
+            }
+            function draw() {
+                ctx.fillStyle = 'rgba(0,0,0,0.07)';
+                ctx.fillRect(0, 0, w, h);
+                ctx.font = fs + 'px monospace';
+                ctx.textRendering = 'optimizeSpeed';
+                ctx.imageSmoothingEnabled = false;
+                for (let i = 0; i < drops.length; i++) {
+                    const ch = chars[Math.floor(Math.random() * chars.length)];
+                    const x = i * fs, y = drops[i] * fs;
+                    const br = Math.random();
+                    if (br > 0.85) { ctx.fillStyle = '#fff'; ctx.shadowColor = '#ff9610'; ctx.shadowBlur = 8; }
+                    else if (br > 0.6) { ctx.fillStyle = '#ff9610'; ctx.shadowColor = '#ff9610'; ctx.shadowBlur = 4; }
+                    else { ctx.fillStyle = '#b86b00'; ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
+                    ctx.fillText(ch, x, y);
+                    ctx.shadowBlur = 0;
+                    if (y > h && Math.random() > 0.975) drops[i] = 0;
+                    drops[i] += 0.5 + Math.random() * 0.4;
+                }
+            }
+            let animId, lastTime = 0;
+            const interval = 1000 / spd;
+            function animate(ts) {
+                animId = requestAnimationFrame(animate);
+                if (ts - lastTime >= interval) { lastTime = ts; draw(); }
+            }
+            resize();
+            window.addEventListener('resize', resize);
+            animId = requestAnimationFrame(animate);
+            window._matrixCanvas = canvas;
+        })();
+
+        // ===== COPY =====
+        window.copyAddr = function(text, btn) {
+            const tmp = document.createElement('input');
+            tmp.value = text;
+            document.body.appendChild(tmp);
+            tmp.select();
+            document.execCommand('copy');
+            document.body.removeChild(tmp);
+            const orig = btn.textContent;
+            btn.textContent = 'COPIED';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+        };
+
+        // ===== COMMANDS =====
+        const cmdInput = document.getElementById('command-input');
+        const cmdOutput = document.getElementById('command-output');
+        const cmds = {
+            help: () => `> Available: help, specs, about, clear, matrix, devs, price`,
+            specs: () => `> Ticker: NVC | Consensus: Hybrid PoW/PoS | Fee: 0.001 NVC | Algo: Scrypt | Lang: C++`,
+            about: () => `> NovaCoin — first hybrid PoW/PoS coin. Private tx. No premine. No masters. Just code.`,
+            clear: () => { setTimeout(() => { cmdOutput.innerHTML = '<span style="color:#555;">// Console cleared.</span>'; }, 40); return '__CLEAR__'; },
+            matrix: () => { const c = window._matrixCanvas; if (c) { c.style.opacity = c.style.opacity === '0.4' ? '0.18' : '0.4'; } return `> Matrix rain toggled.`; },
+            devs: () => `> Developers: open-source community and some fluffy creature.`,
+            price: () => { window.open('https://coinmarketcap.com/currencies/novacoin/', '_blank'); return `> Opening CoinMarketCap…`; }
+        };
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const input = cmdInput.value.trim().toLowerCase();
+                cmdInput.value = '';
+                if (!input) { cmdOutput.innerHTML = '<span style="color:#555;">// Type a command. Try "help"</span>'; return; }
+                const echo = `<span style="color:#666;">nvcoid@node:~$</span> <span style="color:var(--accent);">/chain/nvc/</span> ${input}`;
+                if (cmds[input]) {
+                    const r = cmds[input]();
+                    if (r === '__CLEAR__') return;
+                    cmdOutput.innerHTML = echo + '\n' + r;
+                } else {
+                    cmdOutput.innerHTML = echo + '\n<span class="err">ERR: Unknown command. Type "help".</span>';
+                }
+                cmdOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
+        document.querySelector('.command-section')?.addEventListener('click', function(e) {
+            if (e.target !== cmdInput) cmdInput.focus();
+        });
+        setTimeout(() => cmdInput.focus(), 600);
+
+        // ===== WALLETS DATA =====
+        const walletsData = {
+            desktop: [
+                { name: 'NovaCoin-Qt v0.5.10-aarch64', desc: 'Official desktop wallet for Windows ARM', platforms: ['Windows 10-11 aarch64'], url: 'https://github.com/novacoin-project/novacoin/releases/download/nvc-v0.5.10/v0.5.10-win32-aarch64.zip', features: ['Full key control','Staking','ARM support'] },
+                { name: 'NovaCoin-Qt v0.5.9-x86_32', desc: 'Desktop wallet for legacy Windows', platforms: ['Windows XP-10 x86_32'], url: 'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.9/novacoin-qt_v0.5.9_leveldb-win.zip', features: ['32-bit support','Full key control','Staking'] },
+                { name: 'NovaCoin-Qt v0.5.10-x86_64', desc: 'Desktop wallet for macOS', platforms: ['macOS 11.7.10+'], url: 'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.10/novacoin-qt_v0.5.10-x86_64_macos.dmg', features: ['macOS native','Full key control','Staking'] },
+                { name: 'NovaCoin-Qt v0.5.10-x86_64', desc: 'Wallet for Linux Ubuntu 20', platforms: ['Ubuntu 20'], url: 'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.10/novacoin_v0.5.10-ubuntu20.tar.xz', features: ['Linux native','Full key control','Staking'] },
+                { name: 'NovaCoin-Qt v0.5.10-x86_64', desc: 'Wallet for Linux Ubuntu 18', platforms: ['Ubuntu 18'], url: 'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.10/novacoin_v0.5.10-ubuntu18.tar.xz', features: ['Linux native','Full key control','Staking'] }
+            ],
+            mobile: [
+                { name: 'NovaCoin-Qt v0.5.9-ARMv7', desc: 'Official mobile wallet for Android', platforms: ['Android 4+ ARMv7a'], url: 'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.9/novacoin-qt_v0.5.9-android_arm.apk', features: ['Sync','Staking','Full key control'], icon: '📲' },
+                { name: 'NovaCoin-Qt v0.5.9-x86', desc: 'Official mobile wallet for Android x86', platforms: ['Android 4+ x86'], url: 'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.9/novacoin-qt_v0.5.9-android_x86.apk', features: ['Sync','Staking','x86 support'], icon: '📲' }
+            ]
+        };
+
+        function renderWallets(cat) {
+            const grid = document.getElementById('walletsGrid');
+            const wallets = walletsData[cat] || [];
+            grid.innerHTML = wallets.map(w => `
+            <div class="terminal-window wallet-card pixel-frame">
+              <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+              <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+              <div class="wallet-header">
+                <span class="wallet-icon">${w.icon || ''}</span>
+                <span class="wallet-name">${w.name}</span>
+              </div>
+              <div class="wallet-desc">${w.desc}</div>
+              ${w.platforms ? `<div class="wallet-platforms">${w.platforms.map(p=>`<span class="platform-tag">${p}</span>`).join('')}${w.url?` <a href="${w.url}" target="_blank" class="dl-btn">⬇ DL</a>`:''}</div>` : ''}
+              ${w.features ? `<ul class="wallet-features">${w.features.map(f=>`<li>${f}</li>`).join('')}</ul>` : ''}
+            </div>
+          `).join('');
+        }
+        renderWallets('desktop');
+        document.getElementById('walletTabs').addEventListener('click', function(e) {
+            if (e.target.classList.contains('cat-tab')) {
+                document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                renderWallets(e.target.dataset.cat);
+            }
+        });
+
+        // ===== EXCHANGES =====
+        const exchangesList = [
+            { name: 'FreiExchange', pairs: ['NVC/BTC','NVC/LTC'], urls: ['https://freiexchange.com/market/NVC/BTC','https://freixlite.com/market/NVC/LTC'] },
+            { name: 'PancakeSwap', pairs: ['NVC/BTCB'], urls: ['https://pancakeswap.finance/swap?outputCurrency=0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c&chainId=56&inputCurrency=0xBF84720097de111A80f46f9D077643967042841A'] }
+        ];
+        document.getElementById('exchangesGrid').innerHTML = exchangesList.map(ex => `
+          <div class="terminal-window exchange-card pixel-frame">
+            <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+            <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+            <div class="exchange-name">${ex.name}</div>
+            ${ex.pairs.map((p,i)=>`<a href="${ex.urls[i]}" target="_blank" class="pair-link"><span>${p}</span><span class="pair-arrow">→</span></a>`).join('')}
+          </div>
+        `).join('');
+
+        // ===== MINING POOLS =====
+        document.getElementById('miningGrid').innerHTML = [
+            { name: 'SVCPool', desc: 'Service Pool NovaCoin PoS pool', url: 'https://svcpool.io/' },
+            { name: 'PoW Pools List', desc: 'Full list of NovaCoin PoW mining pools', url: 'https://miningpoolstats.stream/novacoin' }
+        ].map(p => `
+          <div class="terminal-window exchange-card pixel-frame">
+            <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+            <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+            <div class="exchange-name">${p.name}</div>
+            <div style="font-size:0.6rem;color:var(--text-dim);">${p.desc}</div>
+            <a href="${p.url}" target="_blank" class="pixel-btn sm">VISIT</a>
+          </div>
+        `).join('');
+
+        // ===== EXPLORERS =====
+        document.getElementById('explorersGrid').innerHTML = [
+            { name: 'eIquidus', url: 'http://nova.y-chain.net' },
+            { name: 'novaco.in', url: 'https://explorer.novaco.in' }
+        ].map(ex => `
+          <a href="${ex.url}" target="_blank" class="terminal-window exchange-card pixel-frame" style="text-decoration:none;">
+            <span class="pixel-corner tl"></span><span class="pixel-corner tr"></span>
+            <span class="pixel-corner bl"></span><span class="pixel-corner br"></span>
+            <div class="exchange-name">${ex.name}</div>
+            <div style="font-size:0.55rem;color:var(--text-dim);">Open Explorer →</div>
+          </a>
+        `).join('');
+
+        // ===== SOCIAL LINKS =====
+        document.getElementById('socialLinks').innerHTML = [
+            { name:'Bitcointalk', url:'https://bitcointalk.org/index.php?topic=5189560.0', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path transform="translate(2, 0)" d="M16.65 9.15c.34-2.28-1.4-3.5-3.77-4.3l.77-3.08-1.87-.47-.75 3.02c-.5-.12-1-.24-1.5-.35l.76-3.04-1.87-.47-.77 3.08c-.4-.1-.8-.18-1.18-.27l.01-.03-2.58-.64-.5 2 .69.16c.38.1.37.3.36.48l-.87 3.49c.02.01.05.02.08.03l-.08-.02-1.22 4.88c-.05.11-.16.28-.41.22l-.7-.18-.93 2.13 2.44.6c.45.1.9.22 1.34.33l-.78 3.12 1.87.47.77-3.09c.5.14.98.26 1.45.38l-.77 3.08 1.87.47.78-3.13c3.2.6 5.47.36 6.46-2.53.8-2.33-.04-3.67-1.72-4.54 1.22-.28 2.14-1.08 2.39-2.73zm-3.83 5.96c-.58 2.33-4.5 1.07-5.77.75l1.03-4.13c1.27.32 5.34.95 4.74 3.38zm.58-6c-.53 2.12-3.8 1.04-4.86.78l.94-3.75c1.06.26 4.47.76 3.92 2.97z" /></svg>' },
+            { name:'Telegram', url:'https://t.me/NovaCoin_News', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>' },
+            { name:'Discord', url:'https://discord.gg/6juXnsSkGa', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>' },
+            { name:'GitHub Dev', url:'https://github.com/novacoin-project', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>' },
+            { name:'GitHub Community', url:'https://github.com/nova-coin', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>' },
+            { name:'Reddit', url:'https://reddit.com/r/NovacoinCommunity', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>' },
+            { name:'Twitter/X', url:'https://x.com/Novacoin_NVC', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>' },
+            { name:'YouTube', url:'https://www.youtube.com/@Novacoin_NVC', svg:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>' },
+        ].map(l => `<a href="${l.url}" target="_blank" class="social-link" title="${l.name}">${l.svg}</a>`).join('');
+
+        // ===== GLITCH ON HERO =====
+        const heroAscii = document.querySelector('.hero-ascii');
+        if (heroAscii) {
+            setInterval(() => {
+                if (Math.random() < 0.06) {
+                    heroAscii.style.transform = `translate(${(Math.random()-0.5)*4}px,${(Math.random()-0.5)*3}px)`;
+                    heroAscii.style.textShadow = `0 0 ${12+Math.random()*18}px rgba(255,150,16,0.8),${(Math.random()-0.5)*6}px ${(Math.random()-0.5)*3}px 0 rgba(255,0,0,0.3)`;
+                    setTimeout(() => { heroAscii.style.transform = ''; heroAscii.style.textShadow = ''; }, 100 + Math.random() * 180);
+                }
+            }, 1400);
+        }
+
+        // ===== NAV ACTIVE STATE =====
+        const navLinks = document.querySelectorAll('.nav-links a');
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section[id]');
+            let current = '';
+            sections.forEach(s => {
+                const top = s.offsetTop - 120;
+                if (window.scrollY >= top && window.scrollY < top + s.clientHeight) current = s.getAttribute('id');
+            });
+            navLinks.forEach(l => {
+                l.style.color = l.getAttribute('href') === '#' + current ? 'var(--accent)' : 'var(--text-dim)';
+            });
+        });
+
+        console.log('%c NOVACOIN %c[NVC] %c▸ %cTERMINAL BOOTED',
+            'color:#ff9610;font-size:22px;font-family:monospace;',
+            'color:#ccc;font-size:14px;font-family:monospace;',
+            'color:#ff9610;',
+            'color:#888;font-family:monospace;');
+        console.log('%c  HYBRID PoW/PoS · SCRYPT · PRIVATE TX · NO MASTERS',
+            'color:#666;font-family:monospace;font-size:10px;');
+    </script>
 </body>
 </html>
