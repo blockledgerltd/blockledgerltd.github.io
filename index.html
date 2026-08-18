@@ -1,581 +1,558 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NVC BEP20 Token Migration</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>NovaCoin (NVC) — Hybrid PoW/PoS · Smooth Emission</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.ico">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --accent: rgb(255, 150, 0);
+            --accent-light: rgba(255,150,0,0.1);
+            --bg: #ffffff;
+            --text: #222;
+            --muted: #666;
+            --card-bg: #f8f8f8;
+            --border: #e0e0e0;
+        }
+        html, body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Rubik', system-ui, -apple-system, sans-serif;
+            margin: 0; padding: 0;
+        }
+        header {
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border); padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo-area { display:flex; align-items:center; gap:0.6rem; text-decoration:none; color:var(--text); }
+        .logo-img { height:40px; width:auto; }
+        .logo-text { font-size:1.5rem; font-weight:600; letter-spacing:-0.5px; }
+        .lang-switch { display:flex; gap:0.5rem; background:var(--card-bg); border-radius:8px; padding:0.25rem; border:1px solid var(--border); }
+        .lang-btn { padding:0.4rem 1rem; border-radius:6px; border:none; background:transparent; font-weight:500; cursor:pointer; font-family:inherit; font-size:0.9rem; color:var(--muted); }
+        .lang-btn.active { background:var(--accent); color:#fff; }
+
+        .container { max-width:1200px; margin:0 auto; padding:2rem; box-sizing:border-box; }
+
+        .hero { display:flex; flex-wrap:wrap; gap:2rem; align-items:center; justify-content:space-between; margin-bottom:2rem; }
+        .hero-left { flex:1; min-width:280px; }
+        .hero-left h1 { font-size:2.5rem; font-weight:700; }
+        .hero-left .sub { font-size:1.1rem; color:var(--muted); margin-top:0.5rem; }
+        .hero-links { display:flex; gap:1rem; margin-top:1.5rem; }
+        .hero-logo { flex-shrink:0; width:180px; }
+        .hero-logo img { width:100%; height:auto; }
+        @media (max-width: 768px) {
+            .hero-logo { display:none; }
+            .hero { flex-direction:column; align-items:flex-start; }
         }
 
-        body {
-            background: #0a0a0a;
-            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 24px;
-        }
+        .btn { display:inline-block; padding:0.7rem 1.6rem; border-radius:8px; font-weight:600; text-decoration:none; transition:0.2s; font-family:inherit; border:1px solid transparent; cursor:pointer; font-size:0.95rem; text-align:center; }
+        .btn-accent { background:var(--accent); color:#fff; }
+        .btn-accent:hover { background:rgb(235,140,0); }
+        .btn-outline { border-color:var(--border); color:var(--text); background:#fff; }
+        .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
 
-        .container {
-            max-width: 800px;
-            width: 100%;
-            background: #111111;
-            border-radius: 32px;
-            padding: 32px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 140, 0, 0.2);
-            border: 1px solid #ff8c00;
-        }
+        .section-title { font-size:1.8rem; font-weight:600; margin:2.5rem 0 1.5rem; }
 
-        h1 {
-            font-size: 1.9rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ff8c00, #ffb347);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 8px;
-            letter-spacing: -0.3px;
-        }
+        .features-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:2rem; margin-bottom:3rem; }
+        .feature-card { background:var(--card-bg); border-radius:12px; border:1px solid var(--border); padding:1.5rem; }
 
-        .sub {
-            color: #aaa;
-            margin-bottom: 28px;
-            border-left: 3px solid #ff8c00;
-            padding-left: 12px;
-        }
+        /* Slider */
+        .slider-container { position:relative; display:flex; align-items:center; margin-bottom:1rem; }
+        .slider-btn { background:transparent; border:none; font-size:1.5rem; font-weight:300; cursor:pointer; color:var(--muted); transition:0.2s; flex-shrink:0; padding:0 0.5rem; }
+        .slider-btn:hover { color:var(--accent); }
+        .slider-btn:disabled { opacity:0.3; pointer-events:none; }
+        .slider-slides { flex:1; margin:0 1rem; overflow:hidden; }
+        .slider-track { display:flex; transition:transform 0.3s ease; }
+        .slider-slide { min-width:100%; padding:1.5rem; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; box-sizing:border-box; }
+        .slider-slide h3 { margin-top:0; }
+        .slider-dots { display:flex; justify-content:center; gap:0.5rem; margin-bottom:2rem; }
+        .dot { width:10px; height:10px; border-radius:50%; background:var(--border); cursor:pointer; }
+        .dot.active { background:var(--accent); }
 
-        .info-card {
-            background: #1a1a1a;
-            border-radius: 20px;
-            padding: 18px;
-            margin: 20px 0;
-            border: 1px solid #2a2a2a;
-        }
+        /* Tabs */
+        .tabs { display:flex; gap:0; margin-bottom:-1px; }
+        .tab-btn { padding:0.75rem 1.5rem; border:1px solid var(--border); border-bottom:none; background:var(--card-bg); border-radius:12px 12px 0 0; cursor:pointer; font-weight:500; font-family:inherit; font-size:0.95rem; margin-right:4px; transition:0.15s; }
+        .tab-btn.active { background:#fff; border-color:var(--border); border-bottom:1px solid #fff; color:var(--accent); font-weight:600; }
+        .tab-content { border:1px solid var(--border); background:#fff; border-radius:0 12px 12px 12px; padding:1.5rem; }
+        .tab-pane { display:none; }
+        .tab-pane.active { display:block; }
+        .tab-item { display:flex; align-items:center; justify-content:space-between; padding:1rem; background:var(--card-bg); border-radius:12px; border:1px solid var(--border); margin-bottom:0.75rem; }
+        .tab-item .item-name { font-weight:600; }
+        .tab-item .item-desc { color:var(--muted); font-size:0.9rem; }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            flex-wrap: wrap;
-            margin: 8px 0;
-            font-size: 0.9rem;
-        }
+        .spec-table { width:100%; border-collapse:collapse; background:var(--card-bg); border-radius:12px; overflow:hidden; margin-bottom:2rem; }
+        .spec-table td { padding:0.9rem 1.2rem; border-bottom:1px solid var(--border); font-size:0.95rem; }
+        .spec-table tr:last-child td { border-bottom:none; }
+        .spec-label { font-weight:500; color:var(--muted); width:40%; }
+        .spec-value { font-weight:600; }
 
-        .label {
-            color: #ff8c00;
-            font-weight: 600;
-        }
+        .token-section { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:2rem; }
+        .token-item { margin-bottom:1.5rem; }
+        .token-item:last-child { margin-bottom:0; }
+        .token-label { font-weight:600; margin-bottom:0.5rem; }
+        .address-box { display:flex; align-items:center; gap:1rem; background:#fff; border:1px solid var(--border); border-radius:8px; padding:0.8rem 1rem; font-family:'Courier New',monospace; font-size:0.9rem; word-break:break-all; }
+        .copy-btn { background:var(--accent); border:none; color:#fff; padding:0.4rem 1rem; border-radius:6px; cursor:pointer; font-weight:500; font-family:inherit; transition:0.15s; white-space:nowrap; }
+        .copy-btn:hover { background:rgb(235,140,0); }
+        .copy-btn.copied { background:#64748b; }
 
-        .value {
-            color: #e0e0e0;
-            font-family: 'SF Mono', monospace;
-            word-break: break-all;
-            text-align: right;
-        }
+        .term { border-bottom:1px dashed var(--accent); cursor:help; position:relative; display:inline-block; }
+        .term:hover::after { content:attr(data-tooltip); position:absolute; bottom:130%; left:50%; transform:translateX(-50%); background:#1e293b; color:#f1f5f9; padding:0.5rem 0.9rem; border-radius:6px; font-size:0.8rem; white-space:nowrap; font-weight:400; z-index:50; pointer-events:none; }
 
-        /* Wallet selector */
-        .wallet-selector {
-            background: #0f0f0f;
-            border-radius: 24px;
-            padding: 20px;
-            margin: 20px 0;
-            border: 1px solid #ff8c00;
-        }
+        footer { text-align:center; padding:2rem; color:var(--muted); border-top:1px solid var(--border); margin-top:3rem; font-size:0.9rem; }
+        .social-links { display:flex; gap:1rem; justify-content:center; margin-top:0.8rem; flex-wrap:wrap; }
+        .social-links a { color:var(--muted); text-decoration:none; font-weight:500; }
+        .social-links a:hover { color:var(--accent); }
 
-        .selector-label {
-            display: block;
-            margin-bottom: 12px;
-            font-weight: 600;
-            color: #ffb347;
-        }
+        [data-lang] { display:none; }
+        [data-lang].active { display:block; }
+        span[data-lang].active, a[data-lang].active, h1[data-lang].active, p[data-lang].active, div[data-lang].active { display:inline-block; }
+        td[data-lang].active { display:table-cell; }
 
-        select {
-            width: 100%;
-            background: #1e1e1e;
-            border: 1px solid #ff8c00;
-            border-radius: 48px;
-            padding: 12px 18px;
-            color: #fff;
-            font-family: monospace;
-            font-size: 0.9rem;
-            cursor: pointer;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        select:hover {
-            background: #2a2a2a;
-        }
-
-        select:focus {
-            border-color: #ffaa33;
-            box-shadow: 0 0 6px rgba(255, 140, 0, 0.4);
-        }
-
-        .current-balance-hint {
-            margin-top: 12px;
-            font-size: 0.8rem;
-            color: #ffaa66;
-            text-align: right;
-        }
-
-        /* Buttons */
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin: 24px 0;
-        }
-
-        .button {
-            background: #1f1f1f;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 48px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.2s;
-            color: #fff;
-            flex: 1 0 auto;
-            text-align: center;
-            border: 1px solid #333;
-        }
-
-        .button-primary {
-            background: #ff8c00;
-            color: #111;
-            border: none;
-            box-shadow: 0 2px 8px rgba(255, 140, 0, 0.3);
-        }
-
-        .button-primary:hover:not(:disabled) {
-            background: #ffa033;
-            transform: translateY(-1px);
-        }
-
-        .button-secondary {
-            border-color: #ff8c00;
-            color: #ff8c00;
-        }
-
-        .button-secondary:hover:not(:disabled) {
-            background: rgba(255, 140, 0, 0.1);
-        }
-
-        .button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .balance-area {
-            background: #0c0c0c;
-            padding: 14px 18px;
-            border-radius: 20px;
-            margin: 16px 0;
-            font-size: 1.2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            border-left: 4px solid #ff8c00;
-        }
-
-        .balance-number {
-            font-family: monospace;
-            font-weight: bold;
-            color: #ffb347;
-            font-size: 1.3rem;
-        }
-
-        .status {
-            margin-top: 24px;
-            padding: 14px;
-            border-radius: 20px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            word-break: break-word;
-        }
-
-        .success {
-            background: #0f2c1a;
-            border: 1px solid #2e7d32;
-            color: #b9f6ca;
-        }
-
-        .error {
-            background: #2c1010;
-            border: 1px solid #d32f2f;
-            color: #ffcdd2;
-        }
-
-        .loading {
-            background: #1e2a1a;
-            border: 1px solid #ff8c00;
-            color: #ffe0b5;
-        }
-
-        hr {
-            border-color: #2a2a2a;
-            margin: 16px 0;
-        }
-
-        a {
-            color: #ff8c00;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 28px;
-            font-size: 0.7rem;
-            color: #555;
+        /* Скрываем select по умолчанию, показываем только на мобильных */
+        .tab-select { display: none; }
+        @media (max-width: 600px) {
+            .tabs .tab-btn { display: none; }
+            .tabs .tab-select { display: block; width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); font-family: inherit; font-size: 1rem; margin-bottom: 0.5rem; }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>NVC Token Migration</h1>
-    <div class="sub">BNB Smart Chain</div>
+    <header>
+        <a href="#" class="logo-area">
+            <img src="https://site1.nova-coin.net/nvc_logo_round.png" alt="NVC Logo" class="logo-img" />
+            <span class="logo-text">Novacoin</span>
+        </a>
+        <div class="lang-switch">
+            <button class="lang-btn active" onclick="setLang('en')">EN</button>
+            <button class="lang-btn" onclick="setLang('ru')">РУС</button>
+        </div>
+    </header>
 
-    <div class="info-card">
-        <div class="info-row"><span class="label">Old Token (NVC)</span><span class="value">0xBF84720097de111A80f46f9D077643967042841A</span></div>
-        <div class="info-row"><span class="label">New Token (wNVC)</span><span class="value">0x02C13f421ABCdD8A11faC1a4aE43c59d51FB9e19</span></div>
-        <div class="info-row"><span class="label">Network</span><span class="value">BNB Smart Chain (Chain ID 56)</span></div>
+    <div class="container">
+        <div class="hero">
+            <div class="hero-left">
+                <h1 data-lang="en" class="active">NovaCoin <span style="color:var(--accent);">(NVC)</span></h1>
+                <h1 data-lang="ru">NovaCoin <span style="color:var(--accent);">(NVC)</span></h1>
+                <p class="sub active" data-lang="en">First hybrid Scrypt PoW / PoS consensus coin. Private transactions. No premine.</p>
+                <p class="sub" data-lang="ru">Первая монета с гибридным Scrypt PoW / PoS консенсусом. Приватные транзакции. Без премайна.</p>
+                <div class="hero-links">
+                    <a href="https://coinmarketcap.com/currencies/novacoin/" target="_blank" class="btn btn-accent">CoinMarketCap</a>
+                    <a href="https://github.com/novacoin-project/novacoin/wiki" target="_blank" class="btn btn-outline active" data-lang="en">Knowledge Base</a>
+                    <a href="https://github.com/novacoin-project/novacoin/wiki" target="_blank" class="btn btn-outline" data-lang="ru">База знаний</a>
+                </div>
+            </div>
+            <div class="hero-logo">
+                <img src="https://site1.nova-coin.net/nvc_logo.png" alt="NVC large logo" />
+            </div>
+        </div>
+
+        <h2 class="section-title active" data-lang="en">Core Features</h2>
+        <h2 class="section-title" data-lang="ru">Ключевые особенности</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3 data-lang="en" class="active">Hybrid Consensus</h3>
+                <h3 data-lang="ru">Гибридный консенсус</h3>
+                <p data-lang="en" class="active"><span class="term" data-tooltip="Proof of Work — consensus based on computational power.">PoW<sup>?</sup></span> only secures the network, while <span class="term" data-tooltip="Proof of Stake — staking coins to validate blocks and earn rewards.">PoS<sup>?</sup></span> also reduces energy use and enables passive income.</p>
+                <p data-lang="ru"><span class="term" data-tooltip="Proof of Work — консенсус на основе вычислительных мощностей.">PoW<sup>?</sup></span> только защищает сеть, тогда как <span class="term" data-tooltip="Proof of Stake — стейкинг монет для подтверждения блоков и получения награды.">PoS<sup>?</sup></span> также снижает энергопотребление и приносит пассивный доход.</p>
+            </div>
+            <div class="feature-card">
+                <h3 data-lang="en" class="active">Private Transactions</h3>
+                <h3 data-lang="ru">Приватные транзакции</h3>
+                <p data-lang="en" class="active">Addresses starting with '5' are private. No mixers, no master nodes — pure P2P privacy.</p>
+                <p data-lang="ru">Адреса, начинающиеся с '5', используют стелс-технологию. Без миксеров и мастернод — честная P2P-приватность.</p>
+            </div>
+            <div class="feature-card">
+                <h3 data-lang="en" class="active">Smooth Emission</h3>
+                <h3 data-lang="ru">Плавная эмиссия</h3>
+                <p data-lang="en" class="active">No hard cap, no halvings. Rewards adapt to network difficulty via continuous curves, promoting long-term stability.</p>
+                <p data-lang="ru">Без жёсткого потолка и халвингов. Награда плавно снижается с ростом сложности, обеспечивая долгосрочную устойчивость.</p>
+            </div>
+        </div>
+
+        <h2 class="section-title active" data-lang="en">Emission Design</h2>
+        <h2 class="section-title" data-lang="ru">Дизайн эмиссии</h2>
+        <div class="slider-container" id="emissionSlider">
+            <button class="slider-btn" id="prevSlide">&lt;</button>
+            <div class="slider-slides">
+                <div class="slider-track" id="emissionTrack"></div>
+            </div>
+            <button class="slider-btn" id="nextSlide">&gt;</button>
+        </div>
+        <div class="slider-dots" id="emissionDots"></div>
+
+        <h2 class="section-title active" data-lang="en">Technical Specifications</h2>
+        <h2 class="section-title" data-lang="ru">Технические характеристики</h2>
+        <table class="spec-table active" data-lang="en">
+            <tr><td class="spec-label">Launch date</td><td class="spec-value">05-Feb-13</td><td class="spec-label">Ticker</td><td class="spec-value">NVC</td></tr>	
+            <tr><td class="spec-label">Blockchain type</td><td class="spec-value">BTC-like</td><td class="spec-label">Consensus algorithm</td><td class="spec-value">Hybrid</td></tr>
+            <tr><td class="spec-label">Transaction confirmation method</td><td class="spec-value">PoS+PoW</td><td class="spec-label">PoW algorithm</td><td class="spec-value">Scrypt</td></tr>			
+            <tr><td class="spec-label">Number of transaction confirmations</td><td class="spec-value">6</td><td class="spec-label">Number of block confirmations</td><td class="spec-value">520</td></tr>
+            <tr><td class="spec-label">Min/max stake age, days</td><td class="spec-value">30/120</td><td class="spec-label">Standard transaction fee, NVC/kB</td><td class="spec-value">0.001</td></tr>
+            <tr><td class="spec-label">PoS target spacing, minutes</td><td class="spec-value">10</td><td class="spec-label">PoW target spacing, minutes</td><td class="spec-value">30</td></tr>
+            <tr><td class="spec-label">Max PoS reward, coins</td><td class="spec-value">10</td><td class="spec-label">Max PoW reward, coins</td><td class="spec-value">100</td></tr>
+            <tr><td class="spec-label">Mainnet/testnet P2P port</td><td class="spec-value">7777/17777</td><td class="spec-label">Mainnet/testnet JSON-RPC port</td><td class="spec-value">8344/18344</td></tr>
+		</table>
+        <table class="spec-table" data-lang="ru">
+            <tr><td class="spec-label">Дата запуска</td><td class="spec-value">05.02.2013</td><td class="spec-label">Тикер</td><td class="spec-value">NVC</td></tr>		
+            <tr><td class="spec-label">Тип Блокчейна</td><td class="spec-value">BTC-подобный</td><td class="spec-label">Алгоритм консенсуса</td><td class="spec-value">Гибридный</td></tr>
+            <tr><td class="spec-label">Метод подтверждения транзакций</td><td class="spec-value">PoS+PoW</td><td class="spec-label">PoW алгоритм</td><td class="spec-value">Scrypt</td></tr>			
+            <tr><td class="spec-label">Рекомендуемое число подтверждений транзакции</td><td class="spec-value">6</td><td class="spec-label">Необходимое число подтверждений блока</td><td class="spec-value">520</td></tr>	
+            <tr><td class="spec-label">Период созревания входа, дней</td><td class="spec-value">30-120</td><td class="spec-label">Стандартная комиссия, NVC/кБ</td><td class="spec-value">0.001</td></tr>
+            <tr><td class="spec-label">Целевой интервал PoS, минут</td><td class="spec-value">10</td><td class="spec-label">Целевой интервал PoW, минут</td><td class="spec-value">30</td></tr>
+            <tr><td class="spec-label">Максимальная награда PoS, монет</td><td class="spec-value">10</td><td class="spec-label">Максимальная PoW награда, монет</td><td class="spec-value">100</td></tr>
+            <tr><td class="spec-label">P2P порт основной/тестовой сети</td><td class="spec-value">7777/17777</td><td class="spec-label">JSON-RPC порт основной/тестовой сети</td><td class="spec-value">8344/18344</td></tr>	
+        </table>
+
+        <h2 class="section-title active" data-lang="en">BEP-20 Token</h2>
+        <h2 class="section-title" data-lang="ru">BEP-20 мост</h2>
+        <div class="token-section">
+            <div class="token-item">
+                <div class="token-label">Token Contract Address</div>
+                <div class="address-box"><span style="flex:1;">0x02C13f421ABCdD8A11faC1a4aE43c59d51FB9e19</span><button class="copy-btn" onclick="copyText('0x02C13f421ABCdD8A11faC1a4aE43c59d51FB9e19',this)">Copy</button>
+				<a class="copy-btn" href="https://bscscan.com/token/0x02C13f421ABCdD8A11faC1a4aE43c59d51FB9e19" target="_blank">Link</a></div>
+                <a style="color:var(--accent);font-size:12px;" href="https://nova-coin.org/migrate.html" target="_blank">Migrate from old contract↗</a>
+            </div>
+            <div class="token-item">				
+                <div class="token-label">Bridge Reserve MultiSig Safe</div>
+                <div class="address-box"><span style="flex:1;">0xB1C2F7Abb355151BAdF47655390dD259Ddf1bf3d</span><button class="copy-btn" onclick="copyText('0xB1C2F7Abb355151BAdF47655390dD259Ddf1bf3d',this)">Copy</button>
+				<a class="copy-btn" href="https://app.safe.global/balances?safe=bnb:0xB1C2F7Abb355151BAdF47655390dD259Ddf1bf3d" target="_blank">Link</a></div>
+            </div>
+            <div class="token-item">				
+                <div class="token-label">UTXO Proof-of-Funds MultiSig</div>				
+                <div class="address-box"><span style="flex:1;">9EuEfZLL5tnagtMgFHtaEv2dGtZnE7cAZU</span><button class="copy-btn" onclick="copyText('9EuEfZLL5tnagtMgFHtaEv2dGtZnE7cAZU',this)">Copy</button>
+				<a class="copy-btn" href="https://nova.y-chain.net/address/9EuEfZLL5tnagtMgFHtaEv2dGtZnE7cAZU" target="_blank">Link</a></div>
+            </div>
+            <div class="token-item">				
+                <div class="token-label">Telegram Bridge Bot</div>				
+                <div class="address-box"><span style="flex:1;">@nvc_bridge_bot</span><button class="copy-btn" onclick="copyText('@nvc_bridge_bot',this)">Copy</button>
+				<a class="copy-btn" href="https://t.me/nvc_bridge_bot" target="_blank">Link</a></div>
+            </div>			
+        </div>
+
+        <h2 class="section-title active" data-lang="en">Wallets</h2>
+        <h2 class="section-title" data-lang="ru">Кошельки</h2>
+        <div class="tabs" id="walletTabs">
+            <select class="tab-select" id="walletSelect">
+                <option value="windows">Windows</option>
+                <option value="macos">macOS</option>
+                <option value="linux">Linux</option>
+                <option value="android">Android</option>
+                <option value="web">Web</option>
+            </select>
+            <button class="tab-btn active" data-tab="windows">Windows</button>
+            <button class="tab-btn" data-tab="macos">macOS</button>
+            <button class="tab-btn" data-tab="linux">Linux</button>
+            <button class="tab-btn" data-tab="android">Android</button>
+            <button class="tab-btn" data-tab="web">Web</button>
+        </div>
+        <div class="tab-content" id="walletTabContent"></div>
+
+        <h2 class="section-title active" data-lang="en">Exchanges</h2>
+        <h2 class="section-title" data-lang="ru">Биржи</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:2rem; margin-bottom:3rem;" id="exchangeGrid"></div>
+
+        <h2 class="section-title active" data-lang="en">Other</h2>
+        <h2 class="section-title" data-lang="ru">Прочее</h2>
+        <div class="tabs" id="otherTabs"></div>
+        <div class="tab-content" id="otherTabContent"></div>
     </div>
 
-    <!-- WALLET SELECTOR DROPDOWN -->
-    <div class="wallet-selector">
-        <label class="selector-label">🔑 Select connected wallet</label>
-        <select id="walletDropdown">
-            <option value="">-- Connect wallet first --</option>
-        </select>
-        <div class="current-balance-hint" id="selectedHint"></div>
-    </div>
+    <footer>
+        <p> © MMXXVI NovaCoin Foundation. Open-source decentralized cryptocurrency.</p>
+        <div class="social-links">
+            <a href="https://github.com/novacoin-project" target="_blank">GitHub</a>
+            <a href="https://t.me/NovaCoin_News" target="_blank">Telegram</a>
+            <a href="https://discord.gg/6juXnsSkGa" target="_blank">Discord</a>
+            <a href="https://bitcointalk.org/index.php?topic=5189560.0" target="_blank">Bitcointalk</a>
+            <a href="https://reddit.com/r/NovacoinCommunity" target="_blank">Reddit</a>
+            <a href="https://x.com/Novacoin_NVC" target="_blank">Twitter/X</a>
+        </div>
+    </footer>
 
-    <div class="button-group">
-        <button id="connectBtn" class="button button-primary">🌐 Connect & Switch to BSC</button>
-        <button id="approveBtn" class="button button-secondary" disabled>✅ Approve Old Tokens</button>
-        <button id="migrateBtn" class="button button-secondary" disabled>🚀 Migrate</button>
-    </div>
+    <script>
+        (function() {
+            let currentLang = 'en';
+            let currentEmissionSlide = 0;
 
-    <div class="balance-area">
-        <span>💼 Old NVC balance</span>
-        <span id="oldBalance" class="balance-number">—</span>
-    </div>
+            window.setLang = function(lang) {
+                currentLang = lang;
+                document.querySelectorAll('[data-lang]').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll(`[data-lang="${lang}"]`).forEach(el => el.classList.add('active'));
+                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+                
+                buildEmissionSlider(lang);
+                buildWalletTabs(lang);
+                buildOtherTabs(lang);
+                updateEmissionSlide(0);
+            };
 
-    <div id="status" class="status"></div>
-    <footer>Select a wallet from the dropdown, then Approve → Migrate.</footer>
-</div>
+            window.copyText = function(text, btn) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = 'Copied';
+                    btn.classList.add('copied');
+                    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+                });
+            };
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<script>
-    // ---------- CONFIG ----------
-    const OLD_TOKEN_ADDR = "0xBF84720097de111A80f46f9D077643967042841A";
-    const NEW_TOKEN_ADDR = "0x02C13f421ABCdD8A11faC1a4aE43c59d51FB9e19";
+            const emissionData = [
+                { 
+                    enTitle: 'Continuous Decay',
+                    ruTitle: 'Непрерывное снижение',
+                    enBody: 'PoW reward follows <code>~100 / Difficulty<sup>1/6</sup></code>. To halve the reward, difficulty must increase 64× — a smooth curve with no sudden jumps.',
+                    ruBody: 'Награда PoW: <code>~100 / Сложность<sup>1/6</sup></code>. Для двукратного падения награды сложность должна вырасти в 64 раза — плавная кривая без резких скачков.'
+                },
+                { 
+                    enTitle: 'PoS Rate Adaptation',
+                    ruTitle: 'Адаптивная ставка PoS',
+                    enBody: 'Annual rate <code>~ 1 / Difficulty<sup>1/3</sup></code>, bounded between 1% and 100%. High difficulty trims inflation; low difficulty boosts participation.',
+                    ruBody: 'Годовая ставка <code>~ 1 / Сложность<sup>1/3</sup></code>, ограничена 1–100%. Высокая сложность снижает инфляцию, низкая — стимулирует участие.'
+                },
+                { 
+                    enTitle: '10 NVC Cap & Decentralization',
+                    ruTitle: 'Лимит 10 NVC и децентрализация',
+                    enBody: 'PoS block reward cannot exceed 10 NVC. This forces large holders to split their coins into many UTXOs, increasing network reliability and security.',
+                    ruBody: 'Награда за PoS-блок не превышает 10 NVC. Это вынуждает крупных держателей дробить монеты на множество UTXO, повышая надежность и защищенность сети.'
+                },
+                { 
+                    enTitle: 'Time as Capital',
+                    ruTitle: 'Время как капитал',
+                    enBody: 'Coins must mature for 30 days to stake. Rewards are locked for 520 confirmations. Selling early forfeits accrued time — discouraging speculation.',
+                    ruBody: 'Монеты созревают 30 дней для стейкинга. Награда блокируется на 520 подтверждений. Ранняя продажа обнуляет накопленное время — сдерживает спекуляции.'
+                },
+                { 
+                    enTitle: 'Negative Feedback Loop',
+                    ruTitle: 'Отрицательная обратная связь',
+                    enBody: 'When hashrate drops, difficulty falls and rewards temporarily rise, attracting miners back. This self-regulating cycle stabilizes the network without external intervention.',
+                    ruBody: 'При падении хешрейта сложность снижается, награда временно растёт, привлекая майнеров обратно. Саморегуляция стабилизирует сеть без внешних воздействий.'
+                }
+            ];
 
-    const ERC20_ABI = [
-        "function balanceOf(address owner) view returns (uint256)",
-        "function approve(address spender, uint256 amount) returns (bool)",
-        "function allowance(address owner, address spender) view returns (uint256)",
-        "function transferFrom(address from, address to, uint256 amount) returns (bool)"
-    ];
+            const emissionTrack = document.getElementById('emissionTrack');
+            const emissionDots = document.getElementById('emissionDots');
+            let slides = [];
 
-    const NEW_ABI = [
-        "function migrate() external",
-        "function balanceOf(address owner) view returns (uint256)"
-    ];
+            function buildEmissionSlider(lang) {
+                emissionTrack.innerHTML = '';
+                emissionDots.innerHTML = '';
+                slides = [];
+                
+                emissionData.forEach((item, idx) => {
+                    const title = lang === 'ru' ? item.ruTitle : item.enTitle;
+                    const body = lang === 'ru' ? item.ruBody : item.enBody;
+                    
+                    const slide = document.createElement('div');
+                    slide.className = 'slider-slide';
+                    slide.innerHTML = `<h3>${title}</h3><p>${body}</p>`;
+                    emissionTrack.appendChild(slide);
+                    slides.push(slide);
 
-    const BSC_CHAIN_ID = "0x38";
-    const BSC_NETWORK = {
-        chainId: BSC_CHAIN_ID,
-        chainName: "BNB Smart Chain",
-        nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-        rpcUrls: ["https://bsc-dataseed.binance.org/"],
-        blockExplorerUrls: ["https://bscscan.com/"]
-    };
-
-    let provider, signer;
-    let currentAddress = null;
-    let oldContract = null;
-    let newContract = null;
-    let allAccounts = [];
-
-    // DOM elements
-    const connectBtn = document.getElementById("connectBtn");
-    const approveBtn = document.getElementById("approveBtn");
-    const migrateBtn = document.getElementById("migrateBtn");
-    const oldBalanceSpan = document.getElementById("oldBalance");
-    const statusDiv = document.getElementById("status");
-    const walletDropdown = document.getElementById("walletDropdown");
-    const selectedHint = document.getElementById("selectedHint");
-
-    function setStatus(message, type = "loading") {
-        statusDiv.innerHTML = message;
-        statusDiv.className = `status ${type}`;
-    }
-
-    // Populate dropdown with fetched accounts
-    function populateDropdown(accounts) {
-        walletDropdown.innerHTML = "";
-        if (!accounts || accounts.length === 0) {
-            const option = document.createElement("option");
-            option.value = "";
-            option.textContent = "-- No accounts found --";
-            walletDropdown.appendChild(option);
-            return;
-        }
-        for (const acc of accounts) {
-            const option = document.createElement("option");
-            option.value = acc;
-            option.textContent = `${acc.slice(0,6)}...${acc.slice(-4)}`;
-            walletDropdown.appendChild(option);
-        }
-        // If currentAddress is set, select it in dropdown
-        if (currentAddress && accounts.includes(currentAddress)) {
-            walletDropdown.value = currentAddress;
-        } else if (accounts.length > 0) {
-            walletDropdown.value = accounts[0];
-            // trigger manual change to set currentAddress
-            if (walletDropdown.value) switchToAccount(walletDropdown.value);
-        }
-    }
-
-    // Switch internal signer/contracts to a new address
-    async function switchToAccount(address) {
-        if (!provider) {
-            setStatus("Provider not ready. Click 'Connect' first.", "error");
-            return false;
-        }
-        try {
-            setStatus(`Switching to ${address.slice(0,6)}...${address.slice(-4)}...`, "loading");
-            // Get a new signer for this specific address (MetaMask will sign for it if allowed)
-            // Note: ethers signer is tied to the provider; we need to ensure the provider is still connected.
-            // We'll just recreate signer from provider; the selected address must be one of the connected accounts.
-            signer = provider.getSigner(address);
-            // Verify that the signer can actually use this address (will work if MetaMask has it unlocked)
-            const signerAddress = await signer.getAddress();
-            if (signerAddress.toLowerCase() !== address.toLowerCase()) {
-                throw new Error("Signer address mismatch");
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    dot.addEventListener('click', () => updateEmissionSlide(idx));
+                    emissionDots.appendChild(dot);
+                });
             }
-            currentAddress = signerAddress;
-            oldContract = new ethers.Contract(OLD_TOKEN_ADDR, ERC20_ABI, signer);
-            newContract = new ethers.Contract(NEW_TOKEN_ADDR, NEW_ABI, signer);
-            
-            // Update UI
-            selectedHint.innerText = `Active: ${currentAddress.slice(0,8)}...${currentAddress.slice(-6)}`;
-            await loadOldBalance();
-            setStatus(`Ready with wallet ${currentAddress.slice(0,6)}...${currentAddress.slice(-4)}`, "success");
-            return true;
-        } catch (err) {
-            console.error(err);
-            setStatus(`Failed to switch to selected account: ${err.message}`, "error");
-            return false;
-        }
-    }
 
-    // Load old token balance and enable/disable approve button
-    async function loadOldBalance() {
-        if (!oldContract || !currentAddress) {
-            oldBalanceSpan.innerText = "—";
-            approveBtn.disabled = true;
-            migrateBtn.disabled = true;
-            return ethers.BigNumber.from(0);
-        }
-        try {
-            const balance = await oldContract.balanceOf(currentAddress);
-            const formatted = ethers.utils.formatEther(balance);
-            oldBalanceSpan.innerText = `${formatted} NVC`;
-            if (balance.gt(0)) {
-                approveBtn.disabled = false;
-                setStatus(`Ready to approve ${formatted} NVC for migration.`, "success");
-            } else {
-                approveBtn.disabled = true;
-                migrateBtn.disabled = true;
-                setStatus("⚠️ No old NVC tokens found in this wallet.", "loading");
+            function updateEmissionSlide(index) {
+                if (!slides.length) return;
+                currentEmissionSlide = Math.max(0, Math.min(index, slides.length - 1));
+                emissionTrack.style.transform = `translateX(-${currentEmissionSlide * 100}%)`;
+                
+                const dots = emissionDots.querySelectorAll('.dot');
+                dots.forEach((dot, idx) => dot.classList.toggle('active', idx === currentEmissionSlide));
+                document.getElementById('prevSlide').disabled = currentEmissionSlide === 0;
+                document.getElementById('nextSlide').disabled = currentEmissionSlide === slides.length - 1;
             }
-            return balance;
-        } catch (err) {
-            console.error(err);
-            oldBalanceSpan.innerText = "Error";
-            setStatus("Failed to load old token balance. Check contract & network.", "error");
-            return ethers.BigNumber.from(0);
-        }
-    }
 
-    // Connect to MetaMask, switch to BSC, fetch all accounts
-    async function connectAndSwitch() {
-        if (!window.ethereum) {
-            setStatus("❌ MetaMask not installed.", "error");
-            return false;
-        }
-        try {
-            setStatus("🔄 Connecting & switching to BSC...", "loading");
-            // Request accounts to get permission
-            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-            await switchToBSC();
-            
-            // Initialize provider
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            // Get all accounts (connected)
-            allAccounts = await provider.listAccounts();
-            if (allAccounts.length === 0) {
-                throw new Error("No accounts found");
-            }
-            populateDropdown(allAccounts);
-            // Set first account as current
-            currentAddress = allAccounts[0];
-            signer = provider.getSigner(currentAddress);
-            oldContract = new ethers.Contract(OLD_TOKEN_ADDR, ERC20_ABI, signer);
-            newContract = new ethers.Contract(NEW_TOKEN_ADDR, NEW_ABI, signer);
-            selectedHint.innerText = `Active: ${currentAddress.slice(0,8)}...${currentAddress.slice(-6)}`;
-            await loadOldBalance();
-            setStatus(`✅ Connected as ${currentAddress.slice(0,6)}...${currentAddress.slice(-4)} on BSC`, "success");
-            connectBtn.disabled = true;
-            connectBtn.innerText = "✅ Connected";
-            return true;
-        } catch (err) {
-            setStatus(`❌ Connection failed: ${err.message}`, "error");
-            console.error(err);
-            return false;
-        }
-    }
+            document.getElementById('prevSlide').addEventListener('click', () => updateEmissionSlide(currentEmissionSlide - 1));
+            document.getElementById('nextSlide').addEventListener('click', () => updateEmissionSlide(currentEmissionSlide + 1));
 
-    async function switchToBSC() {
-        try {
-            await window.ethereum.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: BSC_CHAIN_ID }]
-            });
-            return true;
-        } catch (switchError) {
-            if (switchError.code === 4902) {
-                try {
-                    await window.ethereum.request({
-                        method: "wallet_addEthereumChain",
-                        params: [BSC_NETWORK]
+            const wallets = {
+                windows: [
+                    { name:'NovaCoin Core (x86)', desc:'v0.5.10 Windows 10-11 x86_64', link:'https://github.com/novacoin-project/novacoin/releases/download/nvc-v0.5.10/v0.5.10-win32-x86_64.zip' },				
+                    { name:'NovaCoin Core (ARM)', desc:'v0.5.10 Windows 10-11 aarch64', link:'https://github.com/novacoin-project/novacoin/releases/download/nvc-v0.5.10/v0.5.10-win32-aarch64.zip' },
+                    { name:'NovaCoin Core (x86)', desc:'v0.5.9 Windows XP-10 x86_32', link:'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.9/novacoin-qt_v0.5.9_leveldb-win.zip' }
+                ],
+                macos: [
+                    { name:'NovaCoin Core (macOS)', desc:'v0.5.10 macOS 11.7.10+', link:'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.10/novacoin-qt_v0.5.10-x86_64_macos.dmg' }
+                ],
+                linux: [
+                    { name:'NovaCoin Core (Ubuntu 20)', desc:'v0.5.10 Ubuntu 20+', link:'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.10/novacoin_v0.5.10-ubuntu20.tar.xz' },
+                    { name:'NovaCoin Core (Ubuntu 18)', desc:'v0.5.10 Ubuntu 18', link:'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.10/novacoin_v0.5.10-ubuntu18.tar.xz' }
+                ],
+                android: [
+                    { name:'NovaCoin Core (ARM)', desc:'v0.5.9 Android 4+ ARMv7a', link:'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.9/novacoin-qt_v0.5.9-android_arm.apk' },
+                    { name:'NovaCoin Core (x86)', desc:'v0.5.9 Android 4+ x86', link:'https://github.com/nova-coin/novacoin/releases/download/nvc-v0.5.9/novacoin-qt_v0.5.9-android_x86.apk' }
+                ],
+                web: [
+                    { name:'Gleec DEX', desc:'Decentralized wallet and exchange', link:'https://dex.gleec.com/wallet' },
+                    { name:'wally.id', desc:'Decentralized open source non-custodial web3 wallet', link:'https://wally.id/' }
+                ]
+            };
+
+            function buildWalletTabs(lang) {
+                const tabContent = document.getElementById('walletTabContent');
+                tabContent.innerHTML = '';
+                Object.keys(wallets).forEach(tab => {
+                    const pane = document.createElement('div');
+                    pane.className = `tab-pane ${tab === 'windows' ? 'active' : ''}`;
+                    pane.dataset.tab = tab;
+                    wallets[tab].forEach(w => {
+                        pane.innerHTML += `
+                            <div class="tab-item">
+                                <div><div class="item-name">${w.name}</div><div class="item-desc">${w.desc}</div></div>
+                                <a href="${w.link}" target="_blank" class="btn btn-outline">Download</a>
+                            </div>`;
                     });
-                    return true;
-                } catch (addError) {
-                    throw new Error("Could not add BSC: " + addError.message);
-                }
+                    tabContent.appendChild(pane);
+                });
+
+                // Tab buttons click handlers
+                document.querySelectorAll('#walletTabs .tab-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const tab = btn.dataset.tab;
+                        document.querySelectorAll('#walletTabs .tab-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        document.querySelectorAll('#walletTabContent .tab-pane').forEach(p => p.classList.remove('active'));
+                        document.querySelector(`#walletTabContent .tab-pane[data-tab="${tab}"]`).classList.add('active');
+                        document.getElementById('walletSelect').value = tab;
+                    };
+                });
+                
+                // Select change handler
+                const walletSelect = document.getElementById('walletSelect');
+                walletSelect.addEventListener('change', function() {
+                    const tab = this.value;
+                    document.querySelectorAll('#walletTabs .tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelector(`#walletTabs .tab-btn[data-tab="${tab}"]`).classList.add('active');
+                    document.querySelectorAll('#walletTabContent .tab-pane').forEach(p => p.classList.remove('active'));
+                    document.querySelector(`#walletTabContent .tab-pane[data-tab="${tab}"]`).classList.add('active');
+                });
             }
-            throw switchError;
-        }
-    }
 
-    // Approve old tokens for the new contract
-    async function approveOldTokens() {
-        if (!oldContract || !newContract || !currentAddress) {
-            setStatus("Please connect wallet first.", "error");
-            return;
-        }
-        try {
-            const balance = await oldContract.balanceOf(currentAddress);
-            if (balance.isZero()) {
-                setStatus("No tokens to approve.", "error");
-                return;
+            function buildOtherTabs(lang) {
+                const tabsContainer = document.getElementById('otherTabs');
+                const tabContent = document.getElementById('otherTabContent');
+                tabsContainer.innerHTML = '';
+                tabContent.innerHTML = '';
+
+                const poolsLabel = lang === 'ru' ? 'Майнинг пулы' : 'Mining Pools';
+                const explorersLabel = lang === 'ru' ? 'Обозреватели' : 'Explorers';
+                const visitText = lang === 'ru' ? 'Посетить' : 'Visit';
+                const openText = lang === 'ru' ? 'Открыть' : 'Open';
+
+                // Create select for mobile
+                const select = document.createElement('select');
+                select.className = 'tab-select';
+                select.id = 'otherSelect';
+
+                const poolsOption = document.createElement('option');
+                poolsOption.value = 'pools';
+                poolsOption.textContent = poolsLabel;
+                select.appendChild(poolsOption);
+
+                const explorersOption = document.createElement('option');
+                explorersOption.value = 'explorers';
+                explorersOption.textContent = explorersLabel;
+                select.appendChild(explorersOption);
+
+                tabsContainer.appendChild(select);
+
+                // Create tab buttons
+                const poolsBtn = document.createElement('button');
+                poolsBtn.className = 'tab-btn active';
+                poolsBtn.dataset.tab = 'pools';
+                poolsBtn.textContent = poolsLabel;
+                tabsContainer.appendChild(poolsBtn);
+
+                const explorersBtn = document.createElement('button');
+                explorersBtn.className = 'tab-btn';
+                explorersBtn.dataset.tab = 'explorers';
+                explorersBtn.textContent = explorersLabel;
+                tabsContainer.appendChild(explorersBtn);
+
+                // Create panes
+                const poolsPane = document.createElement('div');
+                poolsPane.className = 'tab-pane active';
+                poolsPane.dataset.tab = 'pools';
+                poolsPane.innerHTML = `
+                    <div class="tab-item">
+                        <div><div class="item-name">SVCPool</div><div class="item-desc">${lang === 'ru' ? 'Стейкинг пул' : 'PoS staking pool'}</div></div>
+                        <a href="https://svcpool.io/" target="_blank" class="btn btn-outline">${visitText}</a>
+                    </div>
+                    <div class="tab-item">
+                        <div><div class="item-name">PoW Pools</div><div class="item-desc">${lang === 'ru' ? 'Список PoW пулов' : 'Full list of PoW mining pools'}</div></div>
+                        <a href="https://miningpoolstats.stream/novacoin" target="_blank" class="btn btn-outline">${visitText}</a>
+                    </div>`;
+                tabContent.appendChild(poolsPane);
+
+                const explorersPane = document.createElement('div');
+                explorersPane.className = 'tab-pane';
+                explorersPane.dataset.tab = 'explorers';
+                explorersPane.innerHTML = `
+                    <div class="tab-item">
+                        <div><div class="item-name">eIquidus</div><div class="item-desc">Block explorer</div></div>
+                        <a href="http://nova.y-chain.net" target="_blank" class="btn btn-outline">${openText}</a>
+                    </div>
+                    <div class="tab-item">
+                        <div><div class="item-name">cryptoID</div><div class="item-desc">Block explorer</div></div>
+                        <a href="https://chainz.cryptoid.info/nvc/" target="_blank" class="btn btn-outline">${openText}</a>
+                    </div>
+                    <div class="tab-item">
+                        <div><div class="item-name">novaco.in</div><div class="item-desc">Alternative explorer</div></div>
+                        <a href="https://explorer.novaco.in" target="_blank" class="btn btn-outline">${openText}</a>
+                    </div>`;
+                tabContent.appendChild(explorersPane);
+                
+                // Select change handler
+                select.addEventListener('change', () => {
+                    const val = select.value;
+                    tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    tabsContainer.querySelector(`.tab-btn[data-tab="${val}"]`).classList.add('active');
+                    tabContent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                    tabContent.querySelector(`.tab-pane[data-tab="${val}"]`).classList.add('active');
+                });
+
+                // Sync select when buttons clicked
+                poolsBtn.addEventListener('click', () => { select.value = 'pools'; });
+                explorersBtn.addEventListener('click', () => { select.value = 'explorers'; });
+
+                // Tab buttons click handlers
+                tabsContainer.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const tab = btn.dataset.tab;
+                        tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        tabContent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                        tabContent.querySelector(`.tab-pane[data-tab="${tab}"]`).classList.add('active');
+                    });
+                });
             }
-            setStatus("🔄 Approving old tokens (this requires one transaction)...", "loading");
-            approveBtn.disabled = true;
-            migrateBtn.disabled = true;
 
-            const tx = await oldContract.approve(NEW_TOKEN_ADDR, balance);
-            setStatus(`⏳ Approval tx: ${tx.hash}. Waiting confirmation...`, "loading");
-            await tx.wait(1);
-            setStatus("✅ Approval successful! You can now migrate.", "success");
-            migrateBtn.disabled = false;
-        } catch (err) {
-            setStatus(`❌ Approval failed: ${err.message}`, "error");
-            approveBtn.disabled = false;
-        }
-    }
+            const exchanges = [
+                { title:'FreiExchange', desc:'NVC/BTC', link:'https://freiexchange.com/market/NVC/BTC' },
+                { title:'FreiXLite', desc:'NVC/LTC', link:'https://freixlite.com/market/NVC/LTC' },
+                { title:'PancakeSwap', desc:'NVC/USDT', link:'https://pancakeswap.finance/swap?outputCurrency=0x02C13f421ABCdD8A11faC1a4aE43c59d51FB9e19&chainId=56&inputCurrency=0x55d398326f99059fF775485246999027B3197955&chain=bsc' }
+            ];
+            document.getElementById('exchangeGrid').innerHTML = exchanges.map(e => `
+                <div style="background:var(--card-bg); border-radius:12px; border:1px solid var(--border); padding:1.5rem;">
+                    <h3>${e.title}</h3><p style="color:var(--muted);">${e.desc}</p>
+                    <a href="${e.link}" target="_blank" class="btn btn-outline" style="margin-top:1rem;">Trade</a>
+                </div>`).join('');
 
-    // Migration: call migrate() on new contract
-    async function migrate() {
-        if (!newContract || !currentAddress) {
-            setStatus("Please connect wallet first.", "error");
-            return;
-        }
-        try {
-            setStatus("🔄 Migrating... burning old NVC, minting wNVC.", "loading");
-            migrateBtn.disabled = true;
-            approveBtn.disabled = true;
-
-            const tx = await newContract.migrate();
-            setStatus(`⏳ Migration tx: ${tx.hash}. Waiting...`, "loading");
-            const receipt = await tx.wait(1);
-            if (receipt.status === 1) {
-                let newBalance = "?";
-                try {
-                    const bal = await newContract.balanceOf(currentAddress);
-                    newBalance = ethers.utils.formatEther(bal);
-                } catch(e) {}
-                setStatus(`🎉 Migration successful! Received ${newBalance} wNVC. <a href="https://bscscan.com/tx/${tx.hash}" target="_blank">View on BscScan</a>`, "success");
-                await loadOldBalance();  // old balance should become zero
-                migrateBtn.disabled = true;
-            } else {
-                setStatus("❌ Migration transaction failed on-chain.", "error");
-                migrateBtn.disabled = false;
-            }
-        } catch (err) {
-            setStatus(`❌ Migration error: ${err.message}`, "error");
-            migrateBtn.disabled = false;
-            approveBtn.disabled = false;
-        }
-    }
-
-    // Dropdown change handler
-    async function onWalletChange() {
-        const selected = walletDropdown.value;
-        if (!selected) return;
-        if (!provider) {
-            setStatus("Provider not initialized. Please click 'Connect' first.", "error");
-            return;
-        }
-        await switchToAccount(selected);
-    }
-
-    // Listen to MetaMask account changes (to refresh dropdown)
-    if (window.ethereum) {
-        window.ethereum.on("accountsChanged", async (accounts) => {
-            if (accounts.length === 0) {
-                window.location.reload();
-            } else {
-                // Refresh dropdown list and reselect current if present
-                if (provider) {
-                    const newList = await provider.listAccounts();
-                    allAccounts = newList;
-                    populateDropdown(allAccounts);
-                    if (currentAddress && newList.includes(currentAddress)) {
-                        walletDropdown.value = currentAddress;
-                    } else if (newList.length > 0) {
-                        await switchToAccount(newList[0]);
-                    }
-                } else {
-                    window.location.reload();
-                }
-            }
-        });
-        window.ethereum.on("chainChanged", () => {
-            window.location.reload();
-        });
-    }
-
-    // Event listeners
-    connectBtn.addEventListener("click", connectAndSwitch);
-    approveBtn.addEventListener("click", approveOldTokens);
-    migrateBtn.addEventListener("click", migrate);
-    walletDropdown.addEventListener("change", onWalletChange);
-</script>
+            // Initial builds
+            buildEmissionSlider('en');
+            buildWalletTabs('en');
+            buildOtherTabs('en');
+            updateEmissionSlide(0);
+        })();
+    </script>
 </body>
 </html>
